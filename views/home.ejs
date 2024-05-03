@@ -165,8 +165,8 @@
             .finally(() => {
                 data.formState.isLoading = false;
                 const endTime = performance.now();
-                const operationTime = endTime - startTime;
-                console.log(`Operation time: ${operationTime} milliseconds`);
+                data.operation.timeTaken = endTime - startTime;
+                console.log(`Operation time: ${data.operation.timeTaken} milliseconds`);
              })
             
         }
@@ -232,7 +232,7 @@
 
 </head>
 <body 
-    x-data="{ page: 'main', token: '<%= token %>', env: '', baseUrl: '', formData: {redis: { host: '', port: 6379, tls: false }, sourceRedis: { host: '', port: 6379, tls: false }, action: { dataType: 'string', key: '', value: '', ttl: 0, action: '' } }, formState: { isLoading: false, errorMessage: '', redisError: '', sourceRedisError: '' }, response: {}, outputFormatted: false, filteredResponse: {}, csvString: '' }"
+    x-data="{ page: 'main', token: '<%= token %>', env: '', baseUrl: '', formData: {redis: { host: '', port: 6379, tls: false }, sourceRedis: { host: '', port: 6379, tls: false }, action: { dataType: 'string', key: '', value: '', ttl: 0, action: '' } }, formState: { isLoading: false, errorMessage: '', redisError: '', sourceRedisError: '' }, response: {}, outputFormatted: false, filteredResponse: {}, csvString: '', operation: { timeTaken: 0 } }"
     x-init="init($data)"
 >
     <header class="app-header">
@@ -435,8 +435,9 @@
                             </div>
                             <textarea class="font-code font-medium" rows="20" readonly :value="outputFormatted ? JSON.stringify($data.response.data, null, '  ') : JSON.stringify($data.response.data)"></textarea>
                             <small>
-                                <div>
-                                    
+                                <div class="flex" style="justify-content: space-between;">
+                                    <span x-text="''"></span>
+                                    <span x-text="`Time: ${$data.operation.timeTaken.toFixed(1)} ms`"></span>
                                 </div>
                             </small>
                             <template x-if="($data.formData.action.action == 'read' || $data.formData.action.action == 'read') && $data.response.data">
