@@ -1,0 +1,26 @@
+{
+  "name": "redish-ui",
+  "version": "0.5.0",
+  "description": "A simple web app, that runs on cloud functions and provides option to perform operation on cloud meemorystore.",
+  "main": "index.js",
+  "scripts": {
+    "start": "nodemon index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "redis",
+    "cloud-function",
+    "micro-frontend",
+    "alpinejs"
+  ],
+  "author": "Soumitri Pattnaik",
+  "license": "MIT",
+  "dependencies": {
+    "ejs": "^3.1.9",
+    "express": "^4.19.2",
+    "redis": "^4.6.13"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.0"
+  }
+}

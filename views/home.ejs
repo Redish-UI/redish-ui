@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>REDISH UI</title>
+    <link rel="icon" type="image/x-icon" href="https://redis.io/wp-content/themes/redislabs-glide/assets/dist/images/banner-box-icon.svg">
+
+    <!-- ALPINE CORE -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
+    <!-- PICO CSS -->
+    <!-- <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.pink.min.css" /> -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.red.min.css"/>
+
+    <!-- PICO COLORS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.colors.min.css" />
+
+    <!-- FONTAWESOME ICONS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+
+    <style>
+        * {
+            body {
+                margin: 0;
+                padding: 0;
+
+                display: flex;
+                flex-direction: column;
+                min-height: 100vh;
+            }
+
+            body > header {
+                margin-block: 0;
+                padding-top: 0;
+                margin-inline: 1rem;
+            }
+
+            a {
+                text-decoration: none;
+            }
+        }
+        body > main {
+            flex: 1;
+        }
+
+        .flex {
+            display: flex;
+        }
+        .justify-center {
+            justify-content: center;
+        }
+        .align-center {
+            align-items: center;
+        }
+        .align-start {
+            align-items: start;
+        }
+
+        .app-header {
+            margin-inline: 2rem;
+        }
+
+        .main-content {
+            gap: 1.25rem;
+        }
+
+        .form-article {
+            width: 35rem;
+        }
+
+        .output-article {
+            width: 25rem;
+            min-height: max-content;
+        }
+
+        .color-red {
+            color:var(--pico-color-red-500);
+        }
+        .color-error {
+            color: var(--pico-del-color);
+        }
+        .font-code {
+            font-family: monospace;
+        }
+        .font-medium {
+            font-size: medium;
+        }
+
+        .about {
+            max-width: 768px;
+        }
+
+    </style>
+
+    <script>
+        const clone = (obj) => JSON.parse(JSON.stringify(obj));
+
+        const init = (data) => {
+            console.log("init ....");
+            const origin = window.location.origin;
+            const pathname = window.location.pathname;
+            
+
+            data.baseUrl = pathname;
+
+            if (origin.startsWith('http://localhost') || origin.startsWith('http://127.0.0.1') || origin.startsWith('http://0.0.0.0')) {
+                data.env = 'local';
+            } else {
+                data.env = 'live';
+            }
+
+            if(data.env == 'local') {
+                data.formData.redis.host = 'localhost';
+                data.formData.sourceRedis.host = 'localhost';
+            } else {
+                data.formData.redis.host = '';
+                data.formData.sourceRedis.host = '';
+                data.baseUrl += "/";
+            }
+
+            console.log(`origin=${origin}, pathname=${pathname}, data.env=${data.env}, data.baseUrl=${data.baseUrl}`);
+        }
+
+
+        const submitHandler = (data) => {
+            data.formState.isLoading = true;
+            const startTime = performance.now();
+
+            // String to number
+            data.formData.redis.port = Number(data.formData.redis.port);
+            data.formData.sourceRedis.port = Number(data.formData.sourceRedis.port);
+            data.formData.action.ttl = Number(data.formData.action.ttl);
+
+            fetch(`${data.baseUrl}api/process`,
+            {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${data.token}`
+                },
+                body: JSON.stringify(data.formData)
+            })
+            .then(res => res.json())
+            .then(res => {
+                data.formState.isError = false; data.formState.errorMessage = '';
+                data.response = res;
+                data.filteredResponse = clone(res);
+
+                if(res.error && res.status.includes(`Unable to connect to Redis`)) {
+                    if(res.status.includes(`Unable to connect to Redis ${data.formData.redisHost}:${data.formData.redisPort}`)) {
+                        data.formState.redisError = res.status;
+                    } else if(res.status.includes(`Unable to connect to Redis ${data.formData.sourceRedisHost}:${data.formData.sourceRedisPort}`)) {
+                        data.formState.sourceRedisError = res.status;
+                    }
+                } else {
+                    data.formState.redisError = '';
+                    data.formState.sourceRedisError = '';
+                }
+            })
+            .catch(err => {
+                data.formState.errorMessage = err;
+            })
+            .finally(() => {
+                data.formState.isLoading = false;
+                const endTime = performance.now();
+                const operationTime = endTime - startTime;
+                console.log(`Operation time: ${operationTime} milliseconds`);
+             })
+            
+        }
+    
+        const downloadCSV = (data) => {
+            let csvString = "";
+            try {
+                let csvRows = [];
+                if(data.response?.data) {
+                    if(Array.isArray(data.response.data)) {
+                        const headers = Object.keys(data.response.data[0]);
+                        csvRows.push(headers.join(','));
+                        
+                        data.response.data.forEach(row => {
+                            let values = Object.values(row);
+                            values = values.map(value => `"${value}"`).join(',');
+                            csvRows.push(values);
+                        });
+                    } else {
+                        csvRows = [];
+                        const headers = Object.keys(data.response.data);
+                        csvRows.push(headers.join(','));
+                        const values = Object.values(data.response.data).join(',');
+                        csvRows.push(values);
+                    }
+
+                    csvString = csvRows.join('\n');
+                }
+            } catch (err) {
+                console.error(err);
+            }
+
+            const csvFile = new Blob([csvString], { type: 'text/csv' });
+            const csvURL = URL.createObjectURL(csvFile);
+            const a = document.createElement('a');
+            a.style.display = 'none';
+            a.href = csvURL;
+            a.download = 'output.csv';
+            a.click();
+        }
+    
+
+        const downloadJSON = (data) => {
+            const jsonFile = new Blob([JSON.stringify(data.response.data)], { type: 'text/json' });
+            const csvURL = URL.createObjectURL(jsonFile);
+            const a = document.createElement('a');
+            a.style.display = 'none';
+            a.href = csvURL;
+            a.download = 'output.json';
+            a.click();
+        }
+
+        const searchHandler = (data) => {
+            console.log("In search", data.searchTerm);
+            if(data.searchTerm && data.searchTerm.length > 0) {
+                data.filteredResponse.data = clone(data.response.data.filter(site => JSON.stringify(site).toLocaleLowerCase().includes(data.searchTerm.toLocaleLowerCase())));
+            } else {
+                data.filteredResponse.data = clone(data.response.data);
+            }
+        }
+
+    </script>
+
+</head>
+<body 
+    x-data="{ page: 'main', token: '<%= token %>', env: '', baseUrl: '', formData: {redis: { host: '', port: 6379, tls: false }, sourceRedis: { host: '', port: 6379, tls: false }, action: { dataType: 'string', key: '', value: '', ttl: 0, action: '' } }, formState: { isLoading: false, errorMessage: '', redisError: '', sourceRedisError: '' }, response: {}, outputFormatted: false, filteredResponse: {}, csvString: '' }"
+    x-init="init($data)"
+>
+    <header class="app-header">
+        <nav>
+            <ul>
+                <li>
+                    <hgroup>
+                        <h3 class="flex align-center" style="gap: 0.5rem;">
+                            <img src="https://redis.io/wp-content/themes/redislabs-glide/assets/dist/images/banner-box-icon.svg" style="height: 30px; margin-bottom: 4px;" />
+                            <a href="#" style="color: inherit;" @click="page = 'main'"><span class="color-red">RED</span>ISH UI</a>
+                        </h3>
+                        <h2>Redis just got a <span class="color-red">whole lot easier.</span></h4>
+                    </hgroup>
+                </li>
+            </ul>
+            <ul>
+                <li><a href="#about" @click="page = 'about'">About</a></li>
+                <!-- <li><a href="#feedback" @click="page = 'feedback'">Feedback</a></li> -->
+                <li><a href="mailto:soumitri.pattnaik@gmail..com">Feedback</a></li>
+            </ul>
+        </nav>
+    </header>
+    <main>
+        <section x-show="page === 'main'">
+            <div class="container-fluid flex justify-center align-start main-content">
+                <form @submit.prevent="submitHandler($data)">
+                    <article class="form-article">
+                        <main>
+                            <!-- <label for="token">
+                                ID Token <span class="color-red">*</span>
+                                <textarea id="token" name="token" x-model="token" required></textarea>
+                                <small>Type <code>gcloud auth print-identity-token</code> in your terminal</small>
+                            </label> -->
+    
+                            <fieldset class="grid flex align-center" style="margin-bottom: 0;">
+    
+                                <label for="redis-host">
+                                    Redis host <span class="color-red">*</span>
+                                    <input type="text" id="redis-host" name="redis-host" x-model="formData.redis.host" :aria-invalid="formState.redisError != ''" aria-describedby="valid-host" required>
+                                </label>
+            
+                                <label for="redis-port">
+                                    Redis port <span class="color-red">*</span>
+                                    <input type="number" min="1" max="9999" id="redis-port" name="redis-port" x-model="formData.redis.port" :aria-invalid="formState.redisError != ''" required>
+                                </label>
+
+                                <label style="flex: none;">
+                                    <input type="checkbox" role="switch" x-model="formData.redis.tls">
+                                    TLS
+                                </label>
+    
+                            </fieldset>
+    
+                            <details>
+                                <summary>Show More</summary>
+                                <div class="grid">
+                                    <label for="username">
+                                        Username
+                                        <input type="text" id="username" name="username" x-model="formData.redis.username" :aria-invalid="formState.redisError != ''">
+                                    </label>
+    
+                                    <label for="password">
+                                        Password
+                                        <input type="password" id="password" name="password" x-model="formData.redis.password" :aria-invalid="formState.redisError != ''">
+                                    </label>
+                                </div>
+                            </details>
+                            <hr/>
+
+                            <div class="grid">
+                                <label for="data-type">
+                                    Data Type <span class="color-red">*</span>
+                                    <select id="data-type" name="data-type" x-model="formData.action.dataType" required>
+                                        <option>string</option>
+                                        <option>set</option>
+                                    </select>
+                                </label>
+
+                                <label for="action">
+                                    Action <span class="color-red">*</span>
+                                    <select name="action" aria-label="Action" x-model="formData.action.action" required>
+                                        <option selected disabled value="">Action</option>
+                                        <option value="read">Read</option>
+                                        <option value="write">Write</option>
+                                        <option value="copy">Copy</option>
+                                        <template x-if="formData.action.dataType == 'string'">
+                                            <option value="delete">Delete</option>
+                                        </template>
+                                        <template x-if="formData.action.dataType == 'set'">
+                                            <option value="delete-value">Delete Value</option>
+                                        </template>
+                                        <template x-if="formData.action.dataType == 'set'">
+                                            <option value="delete-key">Delete Key</option>
+                                        </template>
+                                    </select>
+                                </label>
+                            </div>
+    
+                            <div>
+                                <hr/>
+    
+                                <!-- KEY -->
+                                <template x-if="formData.action.action == 'read' || formData.action.action == 'write' || formData.action.action == 'delete' || formData.action.action == 'delete-key' || formData.action.action == 'delete-value'">
+                                    <label for="key">
+                                        Key<span x-text="formData.action.dataType == 'string' ? ' | REGEX' : ''"></span> <span class="color-red">*</span>
+                                        <input type="text" id="key" name="key" x-model="formData.action.key" required>
+                                    </label>
+                                </template>
+    
+                                <!-- VALUE -->
+                                <template x-if="formData.action.action == 'write' || formData.action.action == 'delete-value'">
+                                    <label for="value">
+                                        Value <span class="color-red">*</span>
+                                        <textarea id="value" name="value" x-model="formData.action.value" required></textarea>
+                                    </label>
+                                </template>
+    
+                                <!-- SOURCE HOST & PORT -->
+                                <template x-if="formData.action.action == 'copy'">
+                                    <div>
+                                        <fieldset class="grid" style="margin-bottom: 0; display: flex; align-items: center;">
+                                            <label for="sourceRedisHost">
+                                                Source Redis Host <span class="color-red">*</span>
+                                                <input type="text" id="sourceRedisHost" name="sourceRedisHost" x-model="formData.sourceRedis.host" required>
+                                            </label>
+        
+                                            <label for="sourceRedisPort">
+                                                Source Redis port <span class="color-red">*</span>
+                                                <input type="number" min="1" max="9999" id="sourceRedisPort" name="sourceRedisPort" x-model="formData.sourceRedis.port" required>
+                                            </label>
+
+                                            <label style="flex: none;">
+                                                <input type="checkbox" role="switch" x-model="formData.sourceRedis.tls">
+                                                TLS
+                                            </label>
+                                        </fieldset>
+
+                                        <details>
+                                            <summary>Show More</summary>
+                                            <div class="grid">
+                                                <label for="sourceRedisUsername">
+                                                    Source Redis Username
+                                                    <input type="text" id="sourceRedisUsername" name="sourceRedisUsername" x-model="formData.sourceRedis.username" :aria-invalid="formState.redisError != ''">
+                                                </label>
+                
+                                                <label for="sourceRedisPassword">
+                                                    Source Redis Password
+                                                    <input type="password" id="sourceRedisPassword" name="sourceRedisPassword" x-model="formData.sourceRedis.password" :aria-invalid="formState.redisError != ''">
+                                                </label>
+                                            </div>
+                                        </details>
+                                        <hr/>
+                                    </div>
+                                </template>
+    
+                                
+                                <!-- PATTERN -->
+                                <!-- <template x-if="formData.action.action == 'read' || formData.action.action == 'delete' || formData.action.action == 'copy'">
+                                    <label for="pattern">
+                                        Key Pattern <span class="color-red">*</span>
+                                        <input type="text" id="pattern" name="pattern" x-model="formData.pattern" required>
+                                        <small>* = all | *tail = anything that ends with tail (warmtail) | abc = exact match to abc</small>
+                                    </label>
+                                </template> -->
+                                
+                                <!-- TTL -->
+                                <template x-if="formData.action.action == 'write' || formData.action.action == 'copy'">
+                                    <label for="ttl">
+                                        TTL <span class="color-red">*</span>
+                                        <input type="number" min="0" id="ttl" name="ttl" x-model="formData.action.ttl" required></textarea>
+                                        <small>TTL in minutes. Default = 0 i.e. no expiry</small>
+                                    </label>
+                                </template>
+    
+                            </div>
+                        </main>
+                        
+                        <footer>
+                            <button type="submit" :aria-busy="formState.isLoading ? 'true' : 'false'">Submit</button>
+                        </footer>
+                    </article>
+                </form>
+    
+                <article class="output-article">
+                    <main>
+                        <label for="output" x-data="{isCopied: false}">
+                            <div style="display: flex; justify-content: space-between;">
+                                <div>
+                                    Output
+                                    <small>
+                                        <a href="#" style="margin-left: 1rem;" @click.prevent="outputFormatted = !outputFormatted" x-text="outputFormatted ? 'raw response' : 'format response'"></a>
+                                    </small>
+                                </div>
+                                
+                                <small>
+                                    <a href="#" data-tooltip="Copy to clipboard" @click.prevent="isCopied = true; navigator.clipboard.writeText(JSON.stringify($data.response));">
+                                        <i :class="isCopied ? 'fa-solid fa-circle-check' : 'fa-regular fa-copy'" :style="isCopied ? 'color: green;' : ''"></i>
+                                    </a>
+                                </small>
+                            </div>
+                            <textarea class="font-code font-medium" rows="20" readonly :value="outputFormatted ? JSON.stringify($data.response.data, null, '  ') : JSON.stringify($data.response.data)"></textarea>
+                            <small>
+                                <div>
+                                    
+                                </div>
+                            </small>
+                            <template x-if="($data.formData.action.action == 'read' || $data.formData.action.action == 'read') && $data.response.data">
+                                <div class="flex justify-center" style="gap: 2rem;">
+                                    <a href="#" @click.prevent="downloadCSV($data)" class="contrast font-medium"><i class="fa-solid fa-download"></i> CSV</a>
+                                    <a href="#" @click.prevent="downloadJSON($data)" class="contrast font-medium"><i class="fa-solid fa-download"></i> JSON</a>
+                                </div>
+                            </template>
+                        </label>
+                    </main>
+                </article>
+            </div>
+    
+            <!-- <template x-if="$data.filteredResponse?.data && ($data.formData.action.action == 'read')" x-data="{searchTerm: ''}">
+                <div>
+                    <div class="container-fluid" style="max-width: 520px;">
+                        <input name="search" type="search" placeholder="Search" x-model="searchTerm" @change="searchHandler($data)" />
+                    </div>
+                    
+                    <div class="container-fluid overflow-auto">
+                        <table class="font-code font-medium">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Action</th>
+                                    <th>Values</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <template x-for="(site, i) in $data.filteredResponse?.data">
+                                    <tr>
+                                        <td><span x-text="(i+1)"></span></td>
+                                        <td x-data="{ isCopied: false }">
+                                            <a href="#" data-tooltip="Copy to clipboard" @click.prevent="isCopied = true;navigator.clipboard.writeText(JSON.stringify(site));">
+                                                <i :class="isCopied ? 'fa-solid fa-circle-check' : 'fa-regular fa-copy'" :style="isCopied ? 'color: green;' : ''"></i>
+                                            </a>
+                                        </td>
+                                        <td>
+                                            <code x-text="JSON.stringify(site, null, '  ')"></code>
+                                        </td>
+                                    </tr>
+                                </template>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </template> -->
+        </section>
+
+        <section class="container about" x-show="page === 'about'">
+            <div>
+                <h3>An Internal Tool</h3>
+                <p>This app simplifies data management within our GCP environment for Redis instances. Keep in mind, GCP cloud memorystore does not provide a GUI for interacting with Redis. We built this tool to empower employees to interact with Redis data more efficiently.</p>
+
+                <h4>Key Features</h4>
+                <ul>
+                    <li><strong>Effortless Connection & Management:</strong> Connect to your Redis instances and perform CRUD operations directly from the app.</li>
+                    <li><strong>Data Visualization & Export:</strong> Gain insights with built-in visualization tools. Additionally, export your data in CSV and JSON formats.</li>
+                </ul>
+
+                <h4>Security & Cost-Effectiveness</h4>
+                <h5>Enhanced Security</h5>
+                <p>Token-based authentication ensures only authorized employees can access the tool, safeguarding sensitive data. The serverless architecture eliminates security risks associated with traditional servers.</p>
+                <h5>Zero-Cost Solution</h5>
+                <p>This serverless approach offers a cost-effective way to manage your Redis instances without additional infrastructure overhead.</p>
+            </div>
+        </section>
+
+        <section class="container" x-show="page === 'feedback'">
+            FEEDBACK
+        </section>
+    </main>
+    <footer>
+        <span style="display: flex; justify-content: center; font-size: small;">
+            Crafted by&nbsp;<a href="mailto:soumitri.pattnaik@gmail.com" target="_blank">Soumitri</a>
+        </span>
+    </footer>
+
+</body>
+</html>
