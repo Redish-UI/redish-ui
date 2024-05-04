@@ -109,6 +109,7 @@ app.post('/api/process', async (req, res) => {
     message: "OK",
     data: null
   };
+  const NO_KEYS_MESSAGE = 'No keys found';
   
   try {
 
@@ -117,14 +118,24 @@ app.post('/api/process', async (req, res) => {
       if(action.action === ACTIONS.STRING.READ) {
   
         const keys = await client.keys(action.key);
-        console.log(keys);
         const values = [];
         for(const key of keys) {
-          const value = await client.get(key);
-          console.log(key, value);
-          values.push({key, value});
+          console.log('key:', key);
+
+          const type = await client.type(key);
+          console.log(`type: ${type}`);
+
+          if(type === 'string') {
+            const value = await client.get(key);
+            console.log(`value: ${value}`);
+            values.push({key, value});
+          }
         }
-        response.data = values;
+
+        if(values.length > 0)
+          response.data = values;
+        else
+          response.message = NO_KEYS_MESSAGE;
   
       } else if(action.action === ACTIONS.STRING.WRITE) {
   
@@ -135,6 +146,7 @@ app.post('/api/process', async (req, res) => {
   
         const sourceRedisClient = await getRedisClient(payloadSourceRedisOptions);
         const sourceKeys = await sourceRedisClient.keys(action.key);
+
         const values = [];
         for(const key of sourceKeys) {
           const value = await sourceRedisClient.get(key);
@@ -142,8 +154,12 @@ app.post('/api/process', async (req, res) => {
           values.push({key, value});
         }
   
-        response.data = values;
         await sourceRedisClient.disconnect();
+
+        if(values && values.length > 0)
+          response.data = values;
+        else 
+          response.message = NO_KEYS_MESSAGE;
   
       } else if(action.action === ACTIONS.STRING.DELETE) {
         const keys = await client.keys(action.key);
@@ -152,7 +168,10 @@ app.post('/api/process', async (req, res) => {
           await client.del(key);
         }
 
-        response.data = `${keys.length} items deleted. Items: ${keys}`;
+        if(keys && keys.length > 0)
+          response.message = `${keys.length} items deleted.`;
+        else
+          response.message = NO_KEYS_MESSAGE;
   
       } else {
         response.message = "Unsupported action: " + action.action;
@@ -161,9 +180,26 @@ app.post('/api/process', async (req, res) => {
     } else if(action.dataType === "set") {
 
       if(action.action === ACTIONS.SET.READ) {
-        
-        const members = await client.sMembers(action.key);
-        response.data = members;
+
+        const keys = await client.keys(action.key);
+        const membersList = [];
+        for(const key of keys) {
+          console.log('key:', key);
+
+          const type = await client.type(key);
+          console.log(`type: ${type}`);
+
+          if(type === 'set') {
+            const members = await client.sMembers(key);
+            console.log(`members: ${members}`);
+            membersList.push({key, members});
+          }
+        }
+
+        if(membersList && membersList.length > 0)
+          response.data = membersList;
+        else
+          response.message = NO_KEYS_MESSAGE;
 
       } else if(action.action === ACTIONS.SET.WRITE) {
         
@@ -195,6 +231,8 @@ app.post('/api/process', async (req, res) => {
     } else {
       response.message = "Unsupported dataType: " + action.dataType;
     }
+
+    console.log('response.data:', response.data, 'type:', typeof(response.data), 'length', response.data?.length)
 
   } catch(err) {
     console.error(err);

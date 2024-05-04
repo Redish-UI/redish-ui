@@ -79,7 +79,10 @@
             color:var(--pico-color-red-500);
         }
         .color-error {
-            color: var(--pico-del-color);
+            color: tomato;
+        }
+        .color-success {
+            color: green
         }
         .font-code {
             font-family: monospace;
@@ -160,7 +163,8 @@
                 }
             })
             .catch(err => {
-                data.formState.errorMessage = err;
+                console.error(err);
+                data.formState.errorMessage = 'Service error';
             })
             .finally(() => {
                 data.formState.isLoading = false;
@@ -232,7 +236,7 @@
 
 </head>
 <body 
-    x-data="{ page: 'main', token: '<%= token %>', env: '', baseUrl: '', formData: {redis: { host: '', port: 6379, tls: false }, sourceRedis: { host: '', port: 6379, tls: false }, action: { dataType: 'string', key: '', value: '', ttl: 0, action: '' } }, formState: { isLoading: false, errorMessage: '', redisError: '', sourceRedisError: '' }, response: {}, outputFormatted: false, filteredResponse: {}, csvString: '', operation: { timeTaken: 0 } }"
+    x-data="{ page: 'main', token: '<%= token %>', env: '', baseUrl: '', formData: {redis: { host: '', port: 6379, tls: false }, sourceRedis: { host: '', port: 6379, tls: false }, action: { dataType: 'string', key: '', value: '', ttl: 0, action: 'read' } }, formState: { isLoading: false, errorMessage: '', redisError: '', sourceRedisError: '' }, response: {}, outputFormatted: false, filteredResponse: {}, csvString: '', operation: { timeTaken: 0 } }"
     x-init="init($data)"
 >
     <header class="app-header">
@@ -250,7 +254,6 @@
             </ul>
             <ul>
                 <li><a href="#about" @click="page = 'about'">About</a></li>
-                <!-- <li><a href="#feedback" @click="page = 'feedback'">Feedback</a></li> -->
                 <li><a href="mailto:soumitri.pattnaik@gmail..com">Feedback</a></li>
             </ul>
         </nav>
@@ -333,23 +336,7 @@
     
                             <div>
                                 <hr/>
-    
-                                <!-- KEY -->
-                                <template x-if="formData.action.action == 'read' || formData.action.action == 'write' || formData.action.action == 'delete' || formData.action.action == 'delete-key' || formData.action.action == 'delete-value'">
-                                    <label for="key">
-                                        Key<span x-text="formData.action.dataType == 'string' ? ' | REGEX' : ''"></span> <span class="color-red">*</span>
-                                        <input type="text" id="key" name="key" x-model="formData.action.key" required>
-                                    </label>
-                                </template>
-    
-                                <!-- VALUE -->
-                                <template x-if="formData.action.action == 'write' || formData.action.action == 'delete-value'">
-                                    <label for="value">
-                                        Value <span class="color-red">*</span>
-                                        <textarea id="value" name="value" x-model="formData.action.value" required></textarea>
-                                    </label>
-                                </template>
-    
+                                
                                 <!-- SOURCE HOST & PORT -->
                                 <template x-if="formData.action.action == 'copy'">
                                     <div>
@@ -387,16 +374,22 @@
                                         <hr/>
                                     </div>
                                 </template>
-    
-                                
-                                <!-- PATTERN -->
-                                <!-- <template x-if="formData.action.action == 'read' || formData.action.action == 'delete' || formData.action.action == 'copy'">
-                                    <label for="pattern">
-                                        Key Pattern <span class="color-red">*</span>
-                                        <input type="text" id="pattern" name="pattern" x-model="formData.pattern" required>
-                                        <small>* = all | *tail = anything that ends with tail (warmtail) | abc = exact match to abc</small>
+
+                                <!-- KEY -->
+                                <template x-if="formData.action.action == 'read' || formData.action.action == 'write' || formData.action.action == 'copy' || formData.action.action == 'delete' || formData.action.action == 'delete-key' || formData.action.action == 'delete-value'">
+                                    <label for="key">
+                                        Key<span x-text="formData.action.dataType == 'string' && formData.action.action != 'write' ? ' | REGEX' : ''"></span> <span class="color-red">*</span>
+                                        <input type="text" id="key" name="key" x-model="formData.action.key" required>
                                     </label>
-                                </template> -->
+                                </template>
+    
+                                <!-- VALUE -->
+                                <template x-if="formData.action.action == 'write' || formData.action.action == 'delete-value'">
+                                    <label for="value">
+                                        Value <span class="color-red">*</span>
+                                        <textarea id="value" name="value" x-model="formData.action.value" required></textarea>
+                                    </label>
+                                </template>
                                 
                                 <!-- TTL -->
                                 <template x-if="formData.action.action == 'write' || formData.action.action == 'copy'">
@@ -428,7 +421,7 @@
                                 </div>
                                 
                                 <small>
-                                    <a href="#" data-tooltip="Copy to clipboard" @click.prevent="isCopied = true; navigator.clipboard.writeText(JSON.stringify($data.response));">
+                                    <a href="#" data-tooltip="Copy to clipboard" @click.prevent="isCopied = true; navigator.clipboard.writeText(outputFormatted ? JSON.stringify($data.response.data, null, '  ') : JSON.stringify($data.response.data));">
                                         <i :class="isCopied ? 'fa-solid fa-circle-check' : 'fa-regular fa-copy'" :style="isCopied ? 'color: green;' : ''"></i>
                                     </a>
                                 </small>
@@ -436,8 +429,21 @@
                             <textarea class="font-code font-medium" rows="20" readonly :value="outputFormatted ? JSON.stringify($data.response.data, null, '  ') : JSON.stringify($data.response.data)"></textarea>
                             <small>
                                 <div class="flex" style="justify-content: space-between;">
-                                    <span x-text="''"></span>
-                                    <span x-text="`Time: ${$data.operation.timeTaken.toFixed(1)} ms`"></span>
+                                    <span>Status: 
+                                        <template x-if="$data.formState.errorMessage">
+                                            <span x-text="$data.formState.errorMessage" class="color-error"></span>
+                                        </template>
+
+                                        <template x-if="$data.response.message">
+                                            <span x-text="$data.response.message" class="color-success"></span>
+                                        </template>
+                                    </span>
+
+                                    <span>Time: 
+                                        <template x-if="$data.operation.timeTaken > 0.0">
+                                            <span x-text="`${$data.operation.timeTaken.toFixed(1)} ms`" :class="$data.formState.errorMessage ? 'color-error' : 'color-success'"></span>
+                                        </template>
+                                    </span>
                                 </div>
                             </small>
                             <template x-if="($data.formData.action.action == 'read' || $data.formData.action.action == 'read') && $data.response.data">
