@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>REDISH UI</title>
+    <title>Redish UI</title>
     <link rel="icon" type="image/x-icon" href="https://redis.io/wp-content/themes/redislabs-glide/assets/dist/images/banner-box-icon.svg">
 
     <!-- ALPINE CORE -->
@@ -254,7 +254,7 @@
             </ul>
             <ul>
                 <li><a href="#about" @click="page = 'about'">About</a></li>
-                <li><a href="mailto:soumitri.pattnaik@gmail..com">Feedback</a></li>
+                <li><a href="mailto:soumitri.pattnaik@gmail.com?subject=Redish UI issue">Report Issue</a></li>
             </ul>
         </nav>
     </header>
@@ -273,12 +273,12 @@
                             <fieldset class="grid flex align-center" style="margin-bottom: 0;">
     
                                 <label for="redis-host">
-                                    Redis host <span class="color-red">*</span>
+                                    Redis Host <span class="color-red">*</span>
                                     <input type="text" id="redis-host" name="redis-host" x-model="formData.redis.host" :aria-invalid="formState.redisError != ''" aria-describedby="valid-host" required>
                                 </label>
             
                                 <label for="redis-port">
-                                    Redis port <span class="color-red">*</span>
+                                    Redis Port <span class="color-red">*</span>
                                     <input type="number" min="1" max="9999" id="redis-port" name="redis-port" x-model="formData.redis.port" :aria-invalid="formState.redisError != ''" required>
                                 </label>
 
