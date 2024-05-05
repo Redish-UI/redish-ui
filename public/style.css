@@ -1,0 +1,95 @@
+        * {
+            body {
+                margin: 0;
+                padding: 0;
+
+                display: flex;
+                flex-direction: column;
+                min-height: 100vh;
+
+                font-size: medium !important;
+            }
+
+            input,
+            textarea,
+            select,
+            button {
+                font-size: medium !important;
+                /* height: calc(0.5rem * var(--pico-line-height) + var(--pico-form-element-spacing-vertical) * 2 + var(--pico-border-width) * 2) !important; */
+            }
+
+            body>header {
+                margin-block: 0;
+                padding-top: 0;
+                margin-inline: 1rem;
+            }
+
+            a {
+                text-decoration: none;
+            }
+        }
+
+        body>main {
+            flex: 1;
+            padding-top: 0;
+        }
+
+        .flex {
+            display: flex;
+        }
+
+        .justify-center {
+            justify-content: center;
+        }
+
+        .align-center {
+            align-items: center;
+        }
+
+        .align-start {
+            align-items: start;
+        }
+
+        .app-header {
+            margin-inline: 2rem;
+            padding-bottom: 0;
+        }
+
+        .main-content {
+            gap: 1.25rem;
+        }
+
+        .form-article {
+            width: 33rem;
+            padding-top: 0.75rem;
+        }
+
+        .output-article {
+            padding-top: 0.75rem;
+            width: 27rem;
+            min-height: max-content;
+        }
+
+        .color-red {
+            color: var(--pico-color-red-500);
+        }
+
+        .color-error {
+            color: tomato;
+        }
+
+        .color-success {
+            color: green
+        }
+
+        .font-code {
+            font-family: monospace;
+        }
+
+        .font-medium {
+            font-size: medium;
+        }
+
+        .about {
+            max-width: 768px;
+        }
