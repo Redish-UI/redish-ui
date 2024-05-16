@@ -20,13 +20,590 @@
     <!-- FONTAWESOME ICONS -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
 
-    <link rel="stylesheet" href="/style.css">
+    <style type="text/css">
+        /* Light color scheme (Default) */
+        /* Can be forced with data-theme="light" */
+        [data-theme="light"],
+        :root:not([data-theme="dark"]) {
+            --success-color: green;
+        }
 
-    <script src="/main.js"></script>
+        /* Dark color scheme (Auto) */
+        /* Automatically enabled if user has Dark mode enabled */
+        @media only screen and (prefers-color-scheme: dark) {
+        :root:not([data-theme]) {
+            --success-color: chartreuse;
+        }
+        }
+
+        /* Dark color scheme (Forced) */
+        /* Enabled if forced with data-theme="dark" */
+        [data-theme="dark"] {
+            --success-color: chartreuse;
+        }
+
+        * {
+            body {
+                margin: 0;
+                padding: 0;
+
+                display: flex;
+                flex-direction: column;
+                min-height: 100vh;
+
+                font-size: medium !important;
+            }
+
+            input,
+            textarea,
+            select,
+            button,
+            i {
+                font-size: medium !important;
+                /* height: calc(0.5rem * var(--pico-line-height) + var(--pico-form-element-spacing-vertical) * 2 + var(--pico-border-width) * 2) !important; */
+            }
+
+            body>header {
+                margin-block: 0;
+                padding-top: 0;
+                margin-inline: 1rem;
+            }
+
+            a {
+                text-decoration: none;
+            }
+
+            nav > ul > li {
+                padding: 0;
+                padding-inline: var(--pico-nav-element-spacing-horizontal);
+                padding-block: 0.25rem;
+            }
+        }
+
+        body > main {
+            flex: 1;
+            padding-top: 0;
+        }
+
+        .flex {
+            display: flex;
+        }
+
+        .flex-col {
+            flex-direction: column;
+        }
+
+        .justify-center {
+            justify-content: center;
+        }
+
+        .justify-end {
+            justify-content: end;
+        }
+
+        .justify-start {
+            justify-content: start;
+        }
+
+        .align-center {
+            align-items: center;
+        }
+
+        .align-start {
+            align-items: start;
+        }
+
+        .align-end {
+            align-items: end;
+        }
+
+        .space-between {
+            justify-content: space-between;
+        }
+
+
+        .color-red {
+            color: var(--pico-color-red-500);
+        }
+
+        .color-error {
+            /* color: tomato;
+            color: red; */
+            color: var(--pico-color-red-550);
+        }
+
+        .color-success {
+            /* color: green;
+            color: chartreuse; */
+            /* color: var(--pico-color-green-150); */
+            color: var(--success-color);
+        }
+
+        .font-code {
+            font-family: monospace;
+        }
+
+        .font-medium {
+            font-size: medium;
+        }
+
+
+
+        .mb-1 {
+            margin-bottom: 1rem;
+        }
+
+
+
+
+        .app-header {
+            margin-inline: 2rem;
+            padding-bottom: 0;
+            /* border-bottom: 1rem wheat solid; */
+        }
+
+        .main-content {
+            /* gap: 0rem; */
+        }
+
+        .form-article {
+            width: 40rem;
+            /* padding-top: 0.75rem; */
+        }
+
+        .output-article {
+            /* padding-top: 0.75rem; */
+            width: 40rem;
+            min-height: max-content;
+        }
+
+
+        .connection-content {
+            gap: 1.25rem;
+        }
+
+
+        .connection-list {
+            flex: 1;
+        }
+
+        .connection-form {
+            flex: 1;
+        }
+
+
+        .about {
+            max-width: 768px;
+        }
+
+        
+        .connection-nav-container {
+            width: 40rem;
+            margin-inline: auto;
+        }
+        
+    </style>
+
+    <script>
+        const clone = (obj) => JSON.parse(JSON.stringify(obj));
+
+        const init = (data) => {
+            console.log("init ....");
+            const origin = window.location.origin;
+            const pathname = window.location.pathname;
+            
+
+            data.baseUrl = pathname;
+
+            if (origin.startsWith('http://localhost') || origin.startsWith('http://127.0.0.1') || origin.startsWith('http://0.0.0.0')) {
+                data.env = 'local';
+            } else {
+                data.env = 'live';
+            }
+
+            if(data.env == 'local') {
+                data.formData.redis.host = 'localhost';
+                data.formData.sourceRedis.host = 'localhost';
+            } else {
+                data.formData.redis.host = '';
+                data.formData.sourceRedis.host = '';
+                data.baseUrl += "/";
+            }
+
+            console.log(`origin=${origin}, pathname=${pathname}, data.env=${data.env}, data.baseUrl=${data.baseUrl}`);
+        }
+
+        const keySearchHandler = (data) => {
+            console.log('IN keySearchHandler() ...');
+            if(!data.formData.searchTerm || data.formData.searchTerm.trim().length == 0) return
+            data.formState.isLoading = true;
+            const startTime = performance.now();
+            
+            // const formData = JSON.parse(JSON.stringify(data.formData));
+            // formData.action.action = 'read';
+            // formData.action.key = data.searchTerm;
+
+
+            fetch(`${data.baseUrl}api/v1/process`,
+            {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${data.token}`
+                },
+                body: JSON.stringify(data.formData)
+            })
+            .then(res => res.json())
+            .then(res => {
+                data.formState.isError = false; data.formState.errorMessage = '';
+                data.response = res;
+                data.filteredResponse = clone(res);
+
+                if(res.error && res.status.includes(`Unable to connect to Redis`)) {
+                    if(res.status.includes(`Unable to connect to Redis ${data.formData.redisHost}:${data.formData.redisPort}`)) {
+                        data.formState.redisError = res.status;
+                    } else if(res.status.includes(`Unable to connect to Redis ${data.formData.sourceRedisHost}:${data.formData.sourceRedisPort}`)) {
+                        data.formState.sourceRedisError = res.status;
+                    }
+                } else {
+                    data.formState.redisError = '';
+                    data.formState.sourceRedisError = '';
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                data.formState.errorMessage = 'Service error';
+            })
+            .finally(() => {
+                data.formState.isLoading = false;
+                const endTime = performance.now();
+                data.operation.timeTaken = endTime - startTime;
+                console.log(`Operation time: ${data.operation.timeTaken} milliseconds`);
+            });
+        }
+
+        const submitHandler = (data) => {
+            console.log('IN submitHandler() ...');
+            data.formData.searchTerm = '';
+            data.formState.isLoading = true;
+            const startTime = performance.now();
+
+            // String to number
+            data.formData.redis.port = Number(data.formData.redis.port);
+            data.formData.sourceRedis.port = Number(data.formData.sourceRedis.port);
+            data.formData.action.ttl = Number(data.formData.action.ttl);
+            data.formData.redis.timeout = Number(data.formData.redis.timeout);
+
+
+            fetch(`${data.baseUrl}api/v1/process`,
+            {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${data.token}`
+                },
+                body: JSON.stringify(data.formData)
+            })
+            .then(res => res.json())
+            .then(res => {
+                data.formState.isError = false; data.formState.errorMessage = '';
+                data.response = res;
+                data.filteredResponse = clone(res);
+
+                if(res.error && res.status.includes(`Unable to connect to Redis`)) {
+                    if(res.status.includes(`Unable to connect to Redis ${data.formData.redisHost}:${data.formData.redisPort}`)) {
+                        data.formState.redisError = res.status;
+                    } else if(res.status.includes(`Unable to connect to Redis ${data.formData.sourceRedisHost}:${data.formData.sourceRedisPort}`)) {
+                        data.formState.sourceRedisError = res.status;
+                    }
+                } else {
+                    data.formState.redisError = '';
+                    data.formState.sourceRedisError = '';
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                data.formState.errorMessage = 'Service error';
+            })
+            .finally(() => {
+                data.formState.isLoading = false;
+                const endTime = performance.now();
+                data.operation.timeTaken = endTime - startTime;
+                console.log(`Operation time: ${data.operation.timeTaken} milliseconds`);
+            });
+            
+        }
+
+        const downloadCSV = (data) => {
+            let csvString = "";
+            try {
+                let csvRows = [];
+                if(data.response?.data) {
+                    if(Array.isArray(data.response.data)) {
+                        const headers = Object.keys(data.response.data[0]);
+                        csvRows.push(headers.join(','));
+                        
+                        data.response.data.forEach(row => {
+                            let values = Object.values(row);
+                            values = values.map(value => `"${value}"`).join(',');
+                            csvRows.push(values);
+                        });
+                    } else {
+                        csvRows = [];
+                        const headers = Object.keys(data.response.data);
+                        csvRows.push(headers.join(','));
+                        const values = Object.values(data.response.data).join(',');
+                        csvRows.push(values);
+                    }
+
+                    csvString = csvRows.join('\n');
+                }
+            } catch (err) {
+                console.error(err);
+            }
+
+            const csvFile = new Blob([csvString], { type: 'text/csv' });
+            const csvURL = URL.createObjectURL(csvFile);
+            const a = document.createElement('a');
+            a.style.display = 'none';
+            a.href = csvURL;
+            a.download = 'output.csv';
+            a.click();
+        }
+
+
+        const downloadJSON = (data) => {
+            const jsonFile = new Blob([JSON.stringify(data.response.data)], { type: 'text/json' });
+            const csvURL = URL.createObjectURL(jsonFile);
+            const a = document.createElement('a');
+            a.style.display = 'none';
+            a.href = csvURL;
+            a.download = 'output.json';
+            a.click();
+        }
+
+        const searchHandler = (data) => {
+            console.log("In search", data.searchTerm);
+            if(data.searchTerm && data.searchTerm.length > 0) {
+                data.filteredResponse.data = clone(data.response.data.filter(site => JSON.stringify(site).toLocaleLowerCase().includes(data.searchTerm.toLocaleLowerCase())));
+            } else {
+                data.filteredResponse.data = clone(data.response.data);
+            }
+        }
+
+
+        const initConnectionApp = (data) => {
+            data.checkingConnections = true;
+            let connections = localStorage.getItem('connections');
+            // console.log('connections=', connections);
+            if(connections) {
+                connections = JSON.parse(connections);
+            } else {
+                connections = [];
+                connections.push({
+                    alias: 'Local',
+                    host: 'localhost',
+                    port: 6379,
+                    tls: false,
+                    timeout: 30,
+                    username: '',
+                    password: '',
+                    connected: false
+                });
+
+                localStorage.setItem('connections', JSON.stringify(connections));
+            }
+
+            data.connections = connections;
+            // data.connections.forEach(async con => {
+            //     con.connected = false;
+            //     await fetch(`${data.baseUrl}api/v1/connect`,
+            //     {
+            //         method: 'POST',
+            //         headers: {
+            //             'Content-Type': 'application/json',
+            //             'Authorization': `Bearer ${data.token}`
+            //         },
+            //         body: JSON.stringify(con)
+            //     })
+            //     .then(res => res.json())
+            //     .then(res => {
+            //         console.log(res);
+            //         const { connected, error } = res;
+            //         if(error) {
+            //             con.connected = false;
+            //         } else if(connected) {
+            //             con.connected = true;
+            //         } else {
+            //             con.connected = null;
+            //         }
+            //     })
+            //     .catch(err => {
+            //         console.error(err);
+            //         data.formState.errorMessage = 'Service error';
+            //     })
+            //     .finally(() => {
+            //         data.checkingConnection = false;
+            //     });
+            // });
+            
+
+            const fn = async () => {
+                for(const con of data.connections) {
+                    con.connected = null;
+                    await fetch(`${data.baseUrl}api/v1/connect`,
+                    {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${data.token}`
+                        },
+                        body: JSON.stringify(con)
+                    })
+                    .then(res => res.json())
+                    .then(res => {
+                        console.log(res);
+                        const { connected, error } = res;
+                        if(error) {
+                            con.connected = false;
+                        } else if(connected) {
+                            con.connected = true;
+                        } else {
+                            con.connected = null;
+                        }
+                    })
+                    .catch(err => {
+                        console.error(err);
+                        data.formState.errorMessage = 'Service error';
+                    })
+                    .finally(() => {
+                        data.checkingConnection = false;
+                    });
+                }
+                
+                data.checkingConnections = false;
+            }
+            fn();
+            
+        }
+
+
+        const connectionSaveHandler = data => {
+            console.log('connectionSaveHandler() ...', 'data=', JSON.stringify(data));
+            data.savingConnection = true;
+
+            // Validate alias name, make sure non-duplicate
+            if(data.mode == 'add') {
+                const duplicate = data.connections.find(connection => connection.alias.toLowerCase() == data.formData.redis.alias.trim().toLowerCase());
+                if(duplicate) {
+                    data.duplicateConnection = true;
+                } else {
+                    // save
+                    data.connections.push(data.formData.redis);
+                    localStorage.setItem('connections', JSON.stringify(data.connections));
+                    data.connectionSaved = true;
+                }
+            } else if(data.mode == 'edit') {
+                
+                let duplicate = false;
+                for( let i = 0 ; i < data.connections.length ; i ++ ) {
+                    const con = data.connections[i];
+                    if(i != data.conIndex && con.alias.trim().toLowerCase() == data.connections[data.conIndex].alias.trim().toLowerCase()) {
+                        duplicate = true;
+                    }
+                }
+
+                if(duplicate) {
+                    data.duplicateConnection = true;
+                } else {
+                    // save
+                    localStorage.setItem('connections', JSON.stringify(data.connections));
+                    data.connectionSaved = true;
+                }
+
+            }
+
+            data.savingConnection = false;
+
+        }
+
+
+        const connect = data => {
+            data.checkingConnection = true;
+
+            // String to number
+            data.formData.redis.port = Number(data.formData.redis.port);
+            data.formData.sourceRedis.port = Number(data.formData.sourceRedis.port);
+            data.formData.action.ttl = Number(data.formData.action.ttl);
+            data.formData.redis.timeout = Number(data.formData.redis.timeout);
+
+            fetch(`${data.baseUrl}api/v1/connect`,
+            {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${data.token}`
+                },
+                body: JSON.stringify(data.formData.redis)
+            })
+            .then(res => res.json())
+            .then(res => {
+                console.log(res);
+                const { connected, error } = res;
+                if(error) {
+                    data.connected = false;
+                } else if(connected) {
+                    data.connected = true;
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                data.formState.errorMessage = 'Service error';
+            })
+            .finally(() => {
+                data.checkingConnection = false;
+            });
+        }
+
+
+
+        const addConnection = (data) => {
+            data.mode = 'add';
+            data.formData.redis = {
+                alias: '',
+                host: '',
+                port: 6379,
+                tls: false,
+                timeout: 30,
+                username: '',
+                password: ''
+            };
+            data.conIndex = -1;
+            data.checkingConnection = false;
+            data.connected = null;
+            data.savingConnection = false;
+            data.duplicateConnection = false;
+            data.connectionSaved = null;
+        }
+
+        const editConnection = (conIndex, data) => {
+            data.mode = 'edit';
+            data.formData.redis = data.connections[conIndex];
+            data.conIndex = conIndex;
+        }
+
+
+        const selectConnection = (conIndex, data) => {
+            data.formData.redis = data.connections[conIndex];
+            // data.conIndex = conIndex;
+            data.mode = "list";
+            data.page = "main";
+        }
+    </script>
 
 </head>
 <body 
-    x-data="{ page: 'main', token: '<%= token %>', env: '', baseUrl: '', formData: {redis: { host: '', port: 6379, tls: false }, sourceRedis: { host: '', port: 6379, tls: false }, action: { dataType: 'string', key: '', value: '', ttl: 0, action: 'read' } }, formState: { isLoading: false, errorMessage: '', redisError: '', sourceRedisError: '' }, response: {}, outputFormatted: false, filteredResponse: {}, csvString: '', operation: { timeTaken: 0 } }"
+    x-data="{ page: 'connection', token: '<%= token %>', env: '', baseUrl: '', formData: {redis: { host: '', port: 6379, tls: false, timeout: 30 }, sourceRedis: { host: '', port: 6379, tls: false }, searchTerm: '', action: { dataType: 'string', key: '', value: '', ttl: 0, action: 'write' } }, formState: { isLoading: false, errorMessage: '', redisError: '', sourceRedisError: '' }, response: {}, outputFormatted: false, filteredResponse: {}, csvString: '', operation: { timeTaken: 0 } }"
     x-init="init($data)"
 >
     <header class="app-header">
@@ -36,32 +613,123 @@
                     <hgroup>
                         <h4 class="flex align-center" style="gap: 0.3rem;">
                             <img src="https://redis.io/wp-content/themes/redislabs-glide/assets/dist/images/banner-box-icon.svg" style="height: 24px; margin-bottom: 4px;" />
-                            <a href="#" style="color: inherit;" @click="page = 'main'"><span class="color-red">RED</span>ISH UI</a>
+                            <a href="#" style="color: inherit;" @click="$data.formData?.redis?.alias ? page = 'main' : page = 'connection'"><span class="color-red">RED</span>ISH UI</a>
                         </h4>
-                        <h6 style="font-size: medium;">Redis just got a <span class="color-red">whole lot easier.</span></h6>
+                        <template x-if="page != 'main'">
+                            <h6 style="font-size: medium;">Redis just got a <span class="color-red">whole lot easier.</span></h6>
+                        </template>
                     </hgroup>
                 </li>
             </ul>
             <ul>
                 <li><a href="#about" @click="page = 'about'">About</a></li>
                 <li><a href="mailto:soumitri.pattnaik@gmail.com?subject=Redish UI issue">Report Issue</a></li>
+                <li>
+                    <a style="text-decoration: none;" href="https://github.com/Redish-UI/redish-ui" target="_blank" class="btn btn-primary">
+                        <i class="fa-brands fa-github"></i>
+                    </a>
+                </li>
             </ul>
         </nav>
     </header>
-    <main>
-        <section x-show="page === 'main'">
-            <div class="container-fluid flex justify-center align-start main-content">
-                <form @submit.prevent="submitHandler($data)">
-                    <article class="form-article">
-                        <main>
-                            <!-- <label for="token">
-                                ID Token <span class="color-red">*</span>
-                                <textarea id="token" name="token" x-model="token" required></textarea>
-                                <small>Type <code>gcloud auth print-identity-token</code> in your terminal</small>
-                            </label> -->
-    
-                            <fieldset class="grid flex align-center" style="margin-bottom: 0;">
-    
+
+    <main class="flex justify-center">
+        <!-- <div x-text="JSON.stringify($data.formData)"></div> -->
+
+        <section x-show="page ==='connection'" x-data="{ mode: 'list', checkingConnection: false, checkingConnections: false, connected: null, savingConnection: false, duplicateConnection: false, connectionSaved: null }" x-init="initConnectionApp($data)"  class="connection">
+            <div class="container-fluid flex justify-center align-start space-between connection-content">
+                <article class="connection-list">
+                    <main>
+
+                        <div class="flex justify-end mb-1">
+                            <a href="#" @click.prevent="addConnection($data)">
+                                <i class="fa-solid fa-plus"></i>
+                                New Connection
+                            </a>
+                        </div>
+
+                        <!-- <span x-text="JSON.stringify($data.connections)"></span> -->
+                        
+                        <table class="table striped">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Alias</th>
+                                    <th>Host:Port</th>
+                                    <th>TLS</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <template x-for="(con, i) in connections" :key="i">
+                                    <tr>
+                                        <td x-text="i+1"></td>
+                                        <td x-text="con.alias"></td>
+                                        <td x-text="`${con.host}:${con.port}`"></td>
+                                        <td>
+                                            <template x-if="con.tls">
+                                                <i class="fa-solid fa-check color-success"></i>
+                                            </template>
+                                        </td>
+                                        <td>
+                                            <div class="flex" style="gap: 1.25rem;">
+                                                <a 
+                                                    href="#" 
+                                                    class="contrast" 
+                                                    :data-tooltip="`${con.connected != null ? con.connected ? 'Connect' : 'Can not connect' : 'Verifying connection'}`" 
+                                                    :disabled="!con.connected" 
+                                                    @click.prevent="con.connected ? selectConnection(i, $data) : false"
+                                                >
+                                                    <template x-if="con.connected == null">
+                                                        <i class="fa-solid fa-plug" aria-busy="true"></i>
+                                                    </template>
+                                                    <template x-if="con.connected == true">
+                                                        <!-- <i class="fa-solid fa-plug-circle-check color-success"></i> -->
+                                                        <i class="fa-solid fa-plug color-success"></i>
+                                                    </template>
+                                                    <template x-if="con.connected == false">
+                                                        <i class="fa-solid fa-plug color-error"></i>
+                                                    </template>
+                                                </a>
+                                                <a href="#" class="contrast" data-tooltip="Edit" @click.prevent="editConnection(i, $data)"><i class='fa-solid fa-pencil'></i></a>
+                                                <a href="#" class="contrast" data-tooltip="Delete"><i class='fa-solid fa-trash'></i></a>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </template>
+                            </tbody>
+                        </table>
+
+                        <div class="flex justify-center">
+                            <template x-if="checkingConnections">
+                                <small aria-busy="true">Verifying all the connections ...</small>
+                            </template>
+                            <template x-if="!checkingConnections">
+                                <small>All the connections are verified <i class="fa-solid fa-circle-check color-success"></i></small>
+                            </template>
+                        </div>
+                    </main>
+                </article>
+
+                <template x-if="$data.mode == 'add' || $data.mode == 'edit'" class="connection-form">
+                    <article style="width: 33rem;">
+                        <div class="flex justify-end">
+                            <a href="#" @click.prevent="$data.mode = 'none'">
+                                <i class="fa-solid fa-xmark"></i>
+                                Close
+                            </a>
+                        </div>
+                        <form @submit.prevent="connectionSaveHandler($data)">
+
+                            <label>
+                                Alias <span class="color-red">*</span>
+                                <input type="text" name="alias" id="alias" x-model="formData.redis.alias" required :aria-invalid="duplicateConnection === true">
+                                <template x-if="duplicateConnection === true">
+                                    <small class="color-error">Alias not available. Please use another one.</small>
+                                </template>
+                            </label>
+
+                            <fieldset class="grid">
                                 <label for="redis-host">
                                     Redis Host <span class="color-red">*</span>
                                     <input type="text" id="redis-host" name="redis-host" x-model="formData.redis.host" :aria-invalid="formState.redisError != ''" aria-describedby="valid-host" required>
@@ -71,15 +739,14 @@
                                     Redis Port <span class="color-red">*</span>
                                     <input type="number" min="1" max="9999" id="redis-port" name="redis-port" x-model="formData.redis.port" :aria-invalid="formState.redisError != ''" required>
                                 </label>
-
-                                <label style="flex: none;">
-                                    <input type="checkbox" role="switch" x-model="formData.redis.tls">
-                                    TLS
-                                </label>
-    
                             </fieldset>
+                            
+                            <label style="flex: none;">
+                                <input type="checkbox" role="switch" x-model="formData.redis.tls">
+                                TLS
+                            </label>
     
-                            <details>
+                            <details style="margin-top: 1rem;">
                                 <summary>Show More</summary>
                                 <div class="grid">
                                     <label for="username">
@@ -92,159 +759,242 @@
                                         <input type="password" id="password" name="password" x-model="formData.redis.password" :aria-invalid="formState.redisError != ''">
                                     </label>
                                 </div>
+
+                                <label for="timeout">
+                                    Timeout (s)
+                                    <input type="number" id="timeout" name="timeout" x-model="formData.redis.timeout" required />
+                                </label>
+
                             </details>
-                            <hr/>
 
                             <div class="grid">
-                                <label for="data-type">
-                                    Data Type <span class="color-red">*</span>
-                                    <select id="data-type" name="data-type" x-model="formData.action.dataType" required>
-                                        <option>string</option>
-                                        <option>set</option>
-                                    </select>
-                                </label>
+                                <button type="button" class="secondary" @click.prevent="connect($data)" :aria-busy="checkingConnection">
+                                    Check Connection
+                                    <template x-if="connected === true">
+                                        <i class="fa-solid fa-circle-check color-success"></i>
+                                    </template>
+                                    <template x-if="connected === false">
+                                        <i class="fa-solid fa-circle-xmark color-error"></i>
+                                    </template>
+                                </button>
 
-                                <label for="action">
-                                    Action <span class="color-red">*</span>
-                                    <select name="action" aria-label="Action" x-model="formData.action.action" required>
-                                        <option selected disabled value="">Action</option>
-                                        <option value="read">Read</option>
-                                        <option value="write">Write</option>
-                                        <option value="copy">Copy</option>
-                                        <template x-if="formData.action.dataType == 'string'">
-                                            <option value="delete">Delete</option>
-                                        </template>
-                                        <template x-if="formData.action.dataType == 'set'">
-                                            <option value="delete-value">Delete Value</option>
-                                        </template>
-                                        <template x-if="formData.action.dataType == 'set'">
-                                            <option value="delete-key">Delete Key</option>
-                                        </template>
-                                    </select>
-                                </label>
+                                <button type="submit" :aria-busy="savingConnection">
+                                    Save Connection
+                                    <template x-if="connectionSaved === true">
+                                        <i class="fa-solid fa-circle-check color-success"></i>
+                                    </template>
+                                </button>
                             </div>
-    
-                            <div>
-                                <hr/>
-                                
-                                <!-- SOURCE HOST & PORT -->
-                                <template x-if="formData.action.action == 'copy'">
-                                    <div>
-                                        <fieldset class="grid" style="margin-bottom: 0; display: flex; align-items: center;">
-                                            <label for="sourceRedisHost">
-                                                Source Redis Host <span class="color-red">*</span>
-                                                <input type="text" id="sourceRedisHost" name="sourceRedisHost" x-model="formData.sourceRedis.host" required>
-                                            </label>
-        
-                                            <label for="sourceRedisPort">
-                                                Source Redis port <span class="color-red">*</span>
-                                                <input type="number" min="1" max="9999" id="sourceRedisPort" name="sourceRedisPort" x-model="formData.sourceRedis.port" required>
-                                            </label>
 
-                                            <label style="flex: none;">
-                                                <input type="checkbox" role="switch" x-model="formData.sourceRedis.tls">
-                                                TLS
-                                            </label>
-                                        </fieldset>
-
-                                        <details>
-                                            <summary>Show More</summary>
-                                            <div class="grid">
-                                                <label for="sourceRedisUsername">
-                                                    Source Redis Username
-                                                    <input type="text" id="sourceRedisUsername" name="sourceRedisUsername" x-model="formData.sourceRedis.username" :aria-invalid="formState.redisError != ''">
-                                                </label>
-                
-                                                <label for="sourceRedisPassword">
-                                                    Source Redis Password
-                                                    <input type="password" id="sourceRedisPassword" name="sourceRedisPassword" x-model="formData.sourceRedis.password" :aria-invalid="formState.redisError != ''">
-                                                </label>
-                                            </div>
-                                        </details>
-                                        <hr/>
-                                    </div>
+                            <div class="flex flex-col align-center">
+                                <template x-if="connectionSaved === true">
+                                    <small class="color-success">Connection saved</small>
                                 </template>
 
-                                <!-- KEY -->
-                                <template x-if="formData.action.action == 'read' || formData.action.action == 'write' || formData.action.action == 'copy' || formData.action.action == 'delete' || formData.action.action == 'delete-key' || formData.action.action == 'delete-value'">
-                                    <label for="key">
-                                        Key<span x-text="formData.action.dataType == 'string' && formData.action.action != 'write' ? ' (regex)' : ''"></span> <span class="color-red">*</span>
-                                        <input type="text" id="key" name="key" x-model="formData.action.key" required>
-                                    </label>
+                                <template x-if="connected === false">
+                                    <small class="color-error">Unable to connect</small>
                                 </template>
-    
-                                <!-- VALUE -->
-                                <template x-if="formData.action.action == 'write' || formData.action.action == 'delete-value'">
-                                    <label for="value">
-                                        Value <span class="color-red">*</span>
-                                        <textarea id="value" name="value" x-model="formData.action.value" required></textarea>
-                                    </label>
+
+                                <template x-if="connected === true">
+                                    <small class="color-success">Connection successful</small>
                                 </template>
-                                
-                                <!-- TTL -->
-                                <template x-if="formData.action.action == 'write' || formData.action.action == 'copy'">
-                                    <label for="ttl">
-                                        TTL <span class="color-red">*</span>
-                                        <input type="number" min="0" id="ttl" name="ttl" x-model="formData.action.ttl" required></textarea>
-                                        <small>TTL in minutes. Default = 0 i.e. no expiry</small>
-                                    </label>
-                                </template>
-    
                             </div>
-                        </main>
-                        
-                        <footer>
-                            <button type="submit" :aria-busy="formState.isLoading ? 'true' : 'false'">Submit</button>
-                        </footer>
+                            
+                        </form>
                     </article>
-                </form>
+                </template>
+            </div>
+        </section>
+
+        <section x-show="page === 'main'">
+            
+            <div class="container-fluid" >
+
+                <div class="connection-nav-container">
+                    <nav aria-label="breadcrumb">
+                        <ul>
+                            <li><a href="#" @click.prevent="page = 'connection'; mode = 'list'">Connections</a></li>
+                            <li x-text="$data.formData.redis.alias"></li>
+                        </ul>
+                    </nav>
+                </div>
+
+                <div class="container-fluid flex flex-col justify-center align-center main-content">
+                    <form @submit.prevent="submitHandler($data)">
+                        <article class="form-article">
+                            <main>
+                                <!-- <label for="token">
+                                    ID Token <span class="color-red">*</span>
+                                    <textarea id="token" name="token" x-model="token" required></textarea>
+                                    <small>Type <code>gcloud auth print-identity-token</code> in your terminal</small>
+                                </label> -->
     
-                <article class="output-article">
-                    <main>
-                        <label for="output" x-data="{isCopied: false}">
-                            <div style="display: flex; justify-content: space-between;">
-                                <div>
-                                    Output
+                                <div id="search" role="group">
+                                    <input type="text" placeholder="Key (regex) *" x-model="$data.formData.searchTerm" required />
+                                    <button @click.prevent="keySearchHandler($data)" @keyup.enter="keySearchHandler($data)" :disabled="!formData.searchTerm" :aria-busy="formState.isLoading">Search</button>
+                                </div>
+
+                                <details>
+                                    <summary>Something Else</summary>
+                                    
+                                    <div class="grid">
+                                        <label for="data-type">
+                                            Data Type <span class="color-red">*</span>
+                                            <select id="data-type" name="data-type" x-model="formData.action.dataType" required>
+                                                <option>string</option>
+                                                <option>set</option>
+                                            </select>
+                                        </label>
+        
+                                        <label for="action">
+                                            Action <span class="color-red">*</span>
+                                            <select name="action" aria-label="Action" x-model="formData.action.action" required>
+                                                <option selected disabled value="">Action</option>
+                                                <!-- <option value="read">Read</option> -->
+                                                <option value="write">Write</option>
+                                                <!-- <option value="copy">Copy</option> -->
+                                                <template x-if="formData.action.dataType == 'string'">
+                                                    <option value="delete">Delete</option>
+                                                </template>
+                                                <template x-if="formData.action.dataType == 'set'">
+                                                    <option value="delete-value">Delete Value</option>
+                                                </template>
+                                                <template x-if="formData.action.dataType == 'set'">
+                                                    <option value="delete-key">Delete Key</option>
+                                                </template>
+                                            </select>
+                                        </label>
+                                    </div>
+
+                                    <div>
+                                        <hr/>
+                                        
+                                        <!-- SOURCE HOST & PORT -->
+                                        <template x-if="formData.action.action == 'copy'">
+                                            <div>
+                                                <fieldset class="grid" style="margin-bottom: 0; display: flex; align-items: center;">
+                                                    <label for="sourceRedisHost">
+                                                        Source Redis Host <span class="color-red">*</span>
+                                                        <input type="text" id="sourceRedisHost" name="sourceRedisHost" x-model="formData.sourceRedis.host" required>
+                                                    </label>
+                
+                                                    <label for="sourceRedisPort">
+                                                        Source Redis port <span class="color-red">*</span>
+                                                        <input type="number" min="1" max="9999" id="sourceRedisPort" name="sourceRedisPort" x-model="formData.sourceRedis.port" required>
+                                                    </label>
+        
+                                                    <label style="flex: none;">
+                                                        <input type="checkbox" role="switch" x-model="formData.sourceRedis.tls">
+                                                        TLS
+                                                    </label>
+                                                </fieldset>
+        
+                                                <details>
+                                                    <summary>Show More</summary>
+                                                    <div class="grid">
+                                                        <label for="sourceRedisUsername">
+                                                            Source Redis Username
+                                                            <input type="text" id="sourceRedisUsername" name="sourceRedisUsername" x-model="formData.sourceRedis.username" :aria-invalid="formState.redisError != ''">
+                                                        </label>
+                        
+                                                        <label for="sourceRedisPassword">
+                                                            Source Redis Password
+                                                            <input type="password" id="sourceRedisPassword" name="sourceRedisPassword" x-model="formData.sourceRedis.password" :aria-invalid="formState.redisError != ''">
+                                                        </label>
+                                                    </div>
+                                                </details>
+                                                <hr/>
+                                            </div>
+                                        </template>
+        
+                                        <div class="grid">
+                                            <!-- KEY -->
+                                            <template x-if="formData.action.action == 'read' || formData.action.action == 'write' || formData.action.action == 'copy' || formData.action.action == 'delete' || formData.action.action == 'delete-key' || formData.action.action == 'delete-value'">
+                                                <label for="key">
+                                                    Key<span x-text="formData.action.dataType == 'string' && formData.action.action != 'write' ? ' (regex)' : ''"></span> <span class="color-red">*</span>
+                                                    <input type="text" id="key" name="key" x-model="formData.action.key" required>
+                                                </label>
+                                            </template>
+    
+                                             <!-- TTL -->
+                                             <template x-if="formData.action.action == 'write' || formData.action.action == 'copy'">
+                                                <label for="ttl">
+                                                    TTL <span class="color-red">*</span>
+                                                    <input type="number" min="0" id="ttl" name="ttl" x-model="formData.action.ttl" required></textarea>
+                                                    <small>TTL in minutes. Default = 0 i.e. no expiry</small>
+                                                </label>
+                                            </template>
+                                        </div>
+            
+                                        <!-- VALUE -->
+                                        <template x-if="formData.action.action == 'write' || formData.action.action == 'delete-value'">
+                                            <label for="value">
+                                                Value <span class="color-red">*</span>
+                                                <textarea id="value" name="value" x-model="formData.action.value" required></textarea>
+                                            </label>
+                                        </template>
+                                        
+                                    </div>
+
+                                    <button type="submit" :aria-busy="formState.isLoading ? 'true' : 'false'">Submit</button>
+                                </details>
+
+                            </main>
+                            
+                            <!-- <footer>
+                                <button type="submit" :aria-busy="formState.isLoading ? 'true' : 'false'">Submit</button>
+                            </footer> -->
+                        </article>
+
+                        <article class="output-article">
+                            <main>
+                                <label for="output" x-data="{isCopied: false}">
+                                    <div style="display: flex; justify-content: space-between;">
+                                        <div>
+                                            Output
+                                            <small>
+                                                <a href="#" style="margin-left: 1rem;" @click.prevent="outputFormatted = !outputFormatted" x-text="outputFormatted ? 'raw response' : 'format response'"></a>
+                                            </small>
+                                        </div>
+                                        
+                                        <small>
+                                            <a href="#" data-tooltip="Copy to clipboard" @click.prevent="isCopied = true; navigator.clipboard.writeText(outputFormatted ? JSON.stringify($data.response.data, null, '  ') : JSON.stringify($data.response.data));">
+                                                <i :class="isCopied ? 'fa-solid fa-circle-check' : 'fa-regular fa-copy'" :style="isCopied ? 'color: green;' : ''"></i>
+                                            </a>
+                                        </small>
+                                    </div>
+                                    <textarea class="font-code font-medium" rows="13" readonly :value="outputFormatted ? JSON.stringify($data.response.data, null, '  ') : JSON.stringify($data.response.data)"></textarea>
                                     <small>
-                                        <a href="#" style="margin-left: 1rem;" @click.prevent="outputFormatted = !outputFormatted" x-text="outputFormatted ? 'raw response' : 'format response'"></a>
+                                        <div class="flex" style="justify-content: space-between;">
+                                            <span>Status: 
+                                                <template x-if="$data.formState.errorMessage">
+                                                    <span x-text="$data.formState.errorMessage" class="color-error"></span>
+                                                </template>
+        
+                                                <template x-if="$data.response.message">
+                                                    <span x-text="$data.response.message" class="color-success"></span>
+                                                </template>
+                                            </span>
+        
+                                            <span>Time: 
+                                                <template x-if="$data.operation.timeTaken > 0.0">
+                                                    <span x-text="`${$data.operation.timeTaken.toFixed(1)} ms`" :class="$data.formState.errorMessage ? 'color-error' : 'color-success'"></span>
+                                                </template>
+                                            </span>
+                                        </div>
                                     </small>
-                                </div>
-                                
-                                <small>
-                                    <a href="#" data-tooltip="Copy to clipboard" @click.prevent="isCopied = true; navigator.clipboard.writeText(outputFormatted ? JSON.stringify($data.response.data, null, '  ') : JSON.stringify($data.response.data));">
-                                        <i :class="isCopied ? 'fa-solid fa-circle-check' : 'fa-regular fa-copy'" :style="isCopied ? 'color: green;' : ''"></i>
-                                    </a>
-                                </small>
-                            </div>
-                            <textarea class="font-code font-medium" rows="20" readonly :value="outputFormatted ? JSON.stringify($data.response.data, null, '  ') : JSON.stringify($data.response.data)"></textarea>
-                            <small>
-                                <div class="flex" style="justify-content: space-between;">
-                                    <span>Status: 
-                                        <template x-if="$data.formState.errorMessage">
-                                            <span x-text="$data.formState.errorMessage" class="color-error"></span>
-                                        </template>
-
-                                        <template x-if="$data.response.message">
-                                            <span x-text="$data.response.message" class="color-success"></span>
-                                        </template>
-                                    </span>
-
-                                    <span>Time: 
-                                        <template x-if="$data.operation.timeTaken > 0.0">
-                                            <span x-text="`${$data.operation.timeTaken.toFixed(1)} ms`" :class="$data.formState.errorMessage ? 'color-error' : 'color-success'"></span>
-                                        </template>
-                                    </span>
-                                </div>
-                            </small>
-                            <template x-if="($data.formData.action.action == 'read' || $data.formData.action.action == 'read') && $data.response.data">
-                                <div class="flex justify-center" style="gap: 2rem;">
-                                    <a href="#" @click.prevent="downloadCSV($data)" class="contrast font-medium"><i class="fa-solid fa-download"></i> CSV</a>
-                                    <a href="#" @click.prevent="downloadJSON($data)" class="contrast font-medium"><i class="fa-solid fa-download"></i> JSON</a>
-                                </div>
-                            </template>
-                        </label>
-                    </main>
-                </article>
+                                    <!-- <template x-if="($data.formData.action.action == 'read' || $data.formData.action.action == 'read') && $data.response.data"> -->
+                                    <template x-if="$data.response.data">
+                                        <div class="flex justify-center" style="gap: 2rem;">
+                                            <a href="#" @click.prevent="downloadCSV($data)" class="contrast font-medium"><i class="fa-solid fa-download"></i> CSV</a>
+                                            <a href="#" @click.prevent="downloadJSON($data)" class="contrast font-medium"><i class="fa-solid fa-download"></i> JSON</a>
+                                        </div>
+                                    </template>
+                                </label>
+                            </main>
+                        </article>
+                    </form>
+                </div>
             </div>
     
             <!-- <template x-if="$data.filteredResponse?.data && ($data.formData.action.action == 'read')" x-data="{searchTerm: ''}">
@@ -285,27 +1035,26 @@
 
         <section class="container about" x-show="page === 'about'">
             <div>
-                <h3>An Internal Tool</h3>
-                <p>This app simplifies data management within our GCP environment for Redis instances. Keep in mind, GCP cloud memorystore does not provide a GUI for interacting with Redis. We built this tool to empower employees to interact with Redis data more efficiently.</p>
-
-                <h4>Key Features</h4>
-                <ul>
-                    <li><strong>Effortless Connection & Management:</strong> Connect to your Redis instances and perform CRUD operations directly from the app.</li>
-                    <li><strong>Data Visualization & Export:</strong> Gain insights with built-in visualization tools. Additionally, export your data in CSV and JSON formats.</li>
+                <h3>About Redish UI</h3>
+                <p>**Redish UI** is a completely <span class="color-red">free and open-source</span> serverless Redis GUI client designed for accessing Redis instances within private networks. Deployable in <span class="color-red">under 2 minutes</span> via a server-less function (AWS Lambda / Google Cloud Function, etc), Redish UI provides a user-friendly interface to streamline your Redis interaction.</p>
+                <p>Currently, Redish UI supports <code>String</code> and <code>Set</code> data types, with planned support for <code>Hashes</code>, <code>Lists</code>, and <code>Order Sets</code> in the near future.</p>
+                <h4>Features</h4>
+                <ul class="features">
+                    <li>Local connection management</li>
+                    <li>CSV & JSON export option</li>
+                    <li>Data transfer functionality</li>
+                    <li>Free tier with up to 2M invocations in GCP</li>
                 </ul>
-
-                <h4>Security & Cost-Effectiveness</h4>
-                <h5>Enhanced Security</h5>
-                <p>Token-based authentication ensures only authorized employees can access the tool, safeguarding sensitive data. The serverless architecture eliminates security risks associated with traditional servers.</p>
-                <h5>Zero-Cost Solution</h5>
-                <p>This serverless approach offers a cost-effective way to manage your Redis instances without additional infrastructure overhead.</p>
+                <a href="https://github.com/Redish-UI/redish-ui" target="_blank" class="btn btn-primary">View on GitHub</a>
             </div>
         </section>
 
         <section class="container" x-show="page === 'feedback'">
             FEEDBACK
         </section>
+
     </main>
+
     <footer>
         <span style="display: flex; justify-content: center; font-size: small;">
             Crafted by&nbsp;<a href="mailto:soumitri.pattnaik@gmail.com" target="_blank">Soumitri</a>
