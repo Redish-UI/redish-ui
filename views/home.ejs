@@ -105,6 +105,10 @@
             justify-content: start;
         }
 
+        .justify-between {
+            justify-content: space-between;
+        }
+
         .align-center {
             align-items: center;
         }
@@ -208,7 +212,7 @@
         const clone = (obj) => JSON.parse(JSON.stringify(obj));
 
         const getPageData = () => {
-            return { 
+            const pageData = { 
                 page: 'connection', 
                 token: '<%= token %>', 
                 env: '', 
@@ -247,13 +251,14 @@
                 operation: { timeTaken: 0 },
 
                 mode: 'list', 
-                checkingConnection: false, 
-                checkingConnections: false, 
-                connected: null, 
-                savingConnection: false, 
-                duplicateConnection: false, 
+                checkingConnection: false, // flag used while checking the connection info on the connection input form
+                checkingConnections: false,  // flag used while checking the list of saved connections on start up
+                connected: null, // flag used to store the connection status of the connection on the input form
+                savingConnection: false, // save loading state
+                duplicateConnection: false, // name conflict with existing
                 connectionSaved: null 
             }
+            return JSON.parse(JSON.stringify(pageData));
         }
 
         const init = (data) => {
@@ -415,7 +420,6 @@
             a.click();
         }
 
-
         const downloadJSON = (data) => {
             const jsonFile = new Blob([JSON.stringify(data.response.data)], { type: 'text/json' });
             const csvURL = URL.createObjectURL(jsonFile);
@@ -434,7 +438,6 @@
                 data.filteredResponse.data = clone(data.response.data);
             }
         }
-
 
         const initConnectionApp = (data) => {
             data.checkingConnections = true;
@@ -498,7 +501,6 @@
             
         }
 
-
         const connectionSaveHandler = data => {
             console.log('connectionSaveHandler() ...', 'data=', JSON.stringify(data));
             data.savingConnection = true;
@@ -538,7 +540,6 @@
 
         }
 
-
         const connect = data => {
             data.checkingConnection = true;
 
@@ -576,8 +577,6 @@
             });
         }
 
-
-
         const addConnection = (data) => {
             data.mode = 'add';
             data.formData.redis = {
@@ -603,12 +602,16 @@
             data.conIndex = conIndex;
         }
 
-
         const selectConnection = (conIndex, data) => {
             data.formData.redis = data.connections[conIndex];
             // data.conIndex = conIndex;
             data.mode = "list";
             data.page = "main";
+        }
+    
+        const closeConnectionInputForm = (data) => {
+            data.mode = "none";
+            initConnectionApp(data);
         }
     </script>
 
@@ -652,7 +655,8 @@
                 <article class="connection-list">
                     <main>
 
-                        <div class="flex justify-end mb-1">
+                        <div class="flex justify-between mb-1">
+                            <h6 style="margin-bottom: 0;">Connections</h6>
                             <a href="#" @click.prevent="addConnection($data)">
                                 <i class="fa-solid fa-plus"></i>
                                 New Connection
@@ -725,7 +729,7 @@
                 <template x-if="$data.mode == 'add' || $data.mode == 'edit'" class="connection-form">
                     <article style="width: 33rem;">
                         <div class="flex justify-end">
-                            <a href="#" @click.prevent="$data.mode = 'none'">
+                            <a href="#" @click.prevent="closeConnectionInputForm($data)">
                                 <i class="fa-solid fa-xmark"></i>
                                 Close
                             </a>
@@ -799,7 +803,7 @@
 
                             <div class="flex flex-col align-center">
                                 <template x-if="connectionSaved === true">
-                                    <small class="color-success">Connection saved</small>
+                                    <small class="color-success">Connection saved on your browser</small>
                                 </template>
 
                                 <template x-if="connected === false">
