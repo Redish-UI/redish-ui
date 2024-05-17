@@ -207,6 +207,55 @@
     <script>
         const clone = (obj) => JSON.parse(JSON.stringify(obj));
 
+        const getPageData = () => {
+            return { 
+                page: 'connection', 
+                token: '<%= token %>', 
+                env: '', 
+                baseUrl: '', 
+                formData: {
+                    redis: { 
+                        host: '', 
+                        port: 6379, 
+                        tls: false, 
+                        timeout: 30 
+                    }, 
+                    sourceRedis: { 
+                        host: '', 
+                        port: 6379, 
+                        tls: false 
+                    }, 
+                    searchTerm: '', 
+                    action: { 
+                        dataType: 'string', 
+                        key: '', 
+                        value: '', 
+                        ttl: 0, 
+                        action: 'write' 
+                    } 
+                }, 
+                formState: { 
+                    isLoading: false, 
+                    errorMessage: '', 
+                    redisError: '', 
+                    sourceRedisError: '' 
+                }, 
+                response: {}, 
+                outputFormatted: false, 
+                filteredResponse: {}, 
+                csvString: '', 
+                operation: { timeTaken: 0 },
+
+                mode: 'list', 
+                checkingConnection: false, 
+                checkingConnections: false, 
+                connected: null, 
+                savingConnection: false, 
+                duplicateConnection: false, 
+                connectionSaved: null 
+            }
+        }
+
         const init = (data) => {
             console.log("init ....");
             const origin = window.location.origin;
@@ -238,11 +287,6 @@
             if(!data.formData.searchTerm || data.formData.searchTerm.trim().length == 0) return
             data.formState.isLoading = true;
             const startTime = performance.now();
-            
-            // const formData = JSON.parse(JSON.stringify(data.formData));
-            // formData.action.action = 'read';
-            // formData.action.key = data.searchTerm;
-
 
             fetch(`${data.baseUrl}api/v1/process`,
             {
@@ -395,7 +439,6 @@
         const initConnectionApp = (data) => {
             data.checkingConnections = true;
             let connections = localStorage.getItem('connections');
-            // console.log('connections=', connections);
             if(connections) {
                 connections = JSON.parse(connections);
             } else {
@@ -414,39 +457,7 @@
                 localStorage.setItem('connections', JSON.stringify(connections));
             }
 
-            data.connections = connections;
-            // data.connections.forEach(async con => {
-            //     con.connected = false;
-            //     await fetch(`${data.baseUrl}api/v1/connect`,
-            //     {
-            //         method: 'POST',
-            //         headers: {
-            //             'Content-Type': 'application/json',
-            //             'Authorization': `Bearer ${data.token}`
-            //         },
-            //         body: JSON.stringify(con)
-            //     })
-            //     .then(res => res.json())
-            //     .then(res => {
-            //         console.log(res);
-            //         const { connected, error } = res;
-            //         if(error) {
-            //             con.connected = false;
-            //         } else if(connected) {
-            //             con.connected = true;
-            //         } else {
-            //             con.connected = null;
-            //         }
-            //     })
-            //     .catch(err => {
-            //         console.error(err);
-            //         data.formState.errorMessage = 'Service error';
-            //     })
-            //     .finally(() => {
-            //         data.checkingConnection = false;
-            //     });
-            // });
-            
+            data.connections = connections;            
 
             const fn = async () => {
                 for(const con of data.connections) {
@@ -602,8 +613,9 @@
     </script>
 
 </head>
+
 <body 
-    x-data="{ page: 'connection', token: '<%= token %>', env: '', baseUrl: '', formData: {redis: { host: '', port: 6379, tls: false, timeout: 30 }, sourceRedis: { host: '', port: 6379, tls: false }, searchTerm: '', action: { dataType: 'string', key: '', value: '', ttl: 0, action: 'write' } }, formState: { isLoading: false, errorMessage: '', redisError: '', sourceRedisError: '' }, response: {}, outputFormatted: false, filteredResponse: {}, csvString: '', operation: { timeTaken: 0 } }"
+    x-data="getPageData()"
     x-init="init($data)"
 >
     <header class="app-header">
@@ -634,9 +646,8 @@
     </header>
 
     <main class="flex justify-center">
-        <!-- <div x-text="JSON.stringify($data.formData)"></div> -->
 
-        <section x-show="page ==='connection'" x-data="{ mode: 'list', checkingConnection: false, checkingConnections: false, connected: null, savingConnection: false, duplicateConnection: false, connectionSaved: null }" x-init="initConnectionApp($data)"  class="connection">
+        <section x-show="page ==='connection'" x-init="initConnectionApp($data)"  class="connection">
             <div class="container-fluid flex justify-center align-start space-between connection-content">
                 <article class="connection-list">
                     <main>
