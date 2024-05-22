@@ -733,7 +733,7 @@
                                                     </template>
                                                 </a>
                                                 <a href="#" class="contrast" data-tooltip="Edit" @click.prevent="editConnection(i, $data)"><i class='fa-solid fa-pencil'></i></a>
-                                                <a href="#" class="contrast" data-tooltip="Delete" @click.prevent="openConnectionDeleteDialog(i, $data)"><i class='fa-solid fa-trash'></i></a>
+                                                <a href="#" class="contrast" data-tooltip="Delete" @click.prevent="i > 0 ? openConnectionDeleteDialog(i, $data) : false" :disabled="i == 0"><i class='fa-solid fa-trash'></i></a>
                                             </div>
                                         </td>
                                     </tr>
