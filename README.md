@@ -1,4 +1,4 @@
-# Redish-ui
+# Redish-UI
 
 - A minimalist web based Redis GUI client.
 - Can be used in both local and production environments.
@@ -15,7 +15,7 @@
 
 ## Table of Contents
 
-- [Redish-ui](#redish-ui)
+- [Redish-UI](#redish-ui)
   - [Features](#features)
   - [Table of Contents](#table-of-contents)
   - [Local Setup](#local-setup)
