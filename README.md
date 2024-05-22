@@ -12,7 +12,7 @@
   - [Local Setup](#local-setup)
   - [Run The Application](#run-the-application)
   - [Deployment](#deployment)
-    - [Authentication \& Usage](#authentication--usage)
+  - [Authentication \& Usage](#authentication--usage)
   - [Data Type \& Operation Support](#data-type--operation-support)
 
 ## Local Setup
@@ -82,7 +82,7 @@ To deploy the application to Google Cloud Functions, follow these steps:
    - Replace [your-vpc-connector] with the desired vpc connector.
    - **Note:** If your redis instance lives in a private network, you must provide the `--vpc-connector`, otherwise the function won't be able to connect to your Redis instance. Remove the `--vpc-connector` if your Redis lives in a public network.
 
-### Authentication & Usage
+## Authentication & Usage
 
 Typically, after successful deployment, your cloud function should be available through a public URL i.e. `https://[your-region]-[your-project].cloudfunctions.net`.
 You can access Redish-UI via  `https://[your-region]-[your-project].cloudfunctions.net/redish-ui`
