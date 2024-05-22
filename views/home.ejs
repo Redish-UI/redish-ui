@@ -256,7 +256,9 @@
                 connected: null, // flag used to store the connection status of the connection on the input form
                 savingConnection: false, // save loading state
                 duplicateConnection: false, // name conflict with existing
-                connectionSaved: null 
+                connectionSaved: null,
+                showConnectionDeleteConfirmationDialog: false,
+                conIndex: null
             }
             return JSON.parse(JSON.stringify(pageData));
         }
@@ -613,6 +615,26 @@
             data.mode = "none";
             initConnectionApp(data);
         }
+        
+        const openConnectionDeleteDialog = (conIndex, data) => {
+            data.showConnectionDeleteConfirmationDialog = true;
+            data.conIndex = conIndex;
+        }
+
+        const closeConnectionDeleteDialog = (data) => {
+            data.showConnectionDeleteConfirmationDialog = false;
+            data.conIndex = null;
+        }
+
+        const deleteConnection = (data) => {
+            if(data.conIndex) {
+                data.connections.splice(data.conIndex, 1);
+                localStorage.setItem('connections', JSON.stringify(data.connections));
+            }
+            data.showConnectionDeleteConfirmationDialog = false;
+            data.conIndex = null;
+            initConnectionApp(data);
+        }
     </script>
 
 </head>
@@ -707,7 +729,7 @@
                                                     </template>
                                                 </a>
                                                 <a href="#" class="contrast" data-tooltip="Edit" @click.prevent="editConnection(i, $data)"><i class='fa-solid fa-pencil'></i></a>
-                                                <a href="#" class="contrast" data-tooltip="Delete"><i class='fa-solid fa-trash'></i></a>
+                                                <a href="#" class="contrast" data-tooltip="Delete" @click.prevent="openConnectionDeleteDialog(i, $data)"><i class='fa-solid fa-trash'></i></a>
                                             </div>
                                         </td>
                                     </tr>
@@ -819,6 +841,29 @@
                     </article>
                 </template>
             </div>
+
+            <dialog :open="showConnectionDeleteConfirmationDialog">
+                <article>
+                  <header>
+                    <button aria-label="Close" rel="prev" @click.prevent="closeConnectionDeleteDialog($data)"></button>
+                    <hgroup>
+                        <h6>Are you sure?</h6>
+                    </hgroup>
+                  </header>
+                  <p>
+                    This action will delete the local connection that is stored on your browser and you will lose all the connection information stored.
+                  </p>
+                  <p>
+                    Do you want to delete the connection?
+                  </p>
+                  <footer>
+                    <div class="grid">
+                        <button class="secondary" @click.prevent="closeConnectionDeleteDialog($data)">Close</button>
+                        <button @click.prevent="deleteConnection($data)">Confirm</button>
+                    </div>
+                  </footer>
+                </article>
+            </dialog>
         </section>
 
         <section x-show="page === 'main'">
