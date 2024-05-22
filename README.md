@@ -1,8 +1,9 @@
 # Redish-ui
 
-- A simple web based Redis GUI client. 
-- Can be used locally as well as in production environment. 
-- Deployable as a serverless function (AWS Lambda / Google Cloud Functions / Edge Function) to be a no/low cost solution in many instances.
+- A minimalist web based Redis GUI client.
+- Can be used in both local and production environments.
+- Deployable as a serverless function (AWS Lambda / Google Cloud Functions / Edge Function).
+- Single code base.
 
 ## Table of Contents
 
@@ -12,6 +13,7 @@
   - [Run The Application](#run-the-application)
   - [Deployment](#deployment)
     - [Authentication \& Usage](#authentication--usage)
+  - [Data Type \& Operation Support](#data-type--operation-support)
 
 ## Local Setup
 
@@ -61,7 +63,7 @@ To deploy the application to Google Cloud Functions, follow these steps:
    gcloud config set project [your-project-id]
    ```
 
-4. Deploy the application to Cloud Functions in a specific region (e.g., `us-east1`):
+4. Deploy the application as a Cloud Function in a specific region (e.g., `us-east1`):
    ```bash
    gcloud functions deploy redish-ui \
      --runtime nodejs20 \
@@ -78,13 +80,27 @@ To deploy the application to Google Cloud Functions, follow these steps:
    - Replace `your-project-id` with your actual Google Cloud project ID.
    - Replace `us-east1` with the desired region.
    - Replace [your-vpc-connector] with the desired vpc connector.
+   - **Note:** If your redis instance lives in a private network, you must provide the `--vpc-connector`, otherwise the function won't be able to connect to your Redis instance. Remove the `--vpc-connector` if your Redis lives in a public network.
 
 ### Authentication & Usage
 
-- If your cloud policy allows unauthenticated access to cloud functions then you should be able to access the application from your cloud function endpoint.
-- If your policy does not allow unauthenticated access then remove `--allow-unauthenticated` from the above command.
-- After you remove the `--allow-unauthenticated` flag, you won't be able to access the URL of the function directly from your browser. 
-- Every authentication cloud function needs to be accessed with a basic auth token in header with a valid id token.
-- You can run `gcloud auth print-identity-token` to view your identity token.
-- Use a browser extension (such as header editor in chrome) to supply the required auth header for the function url.
+Typically, after successful deployment, your cloud function should be available through a public URL i.e. `https://[your-region]-[your-project].cloudfunctions.net`.
+You can access Redish-UI via  `https://[your-region]-[your-project].cloudfunctions.net/redish-ui`
+
+**Note:**
+
+- If your cloud policy allows unauthenticated access to cloud functions then you can access the application from the above URL.
+- However, if your policy does not allow unauthenticated access then you will need to remove `--allow-unauthenticated` from the above deploy command.
+- After you remove the `--allow-unauthenticated` flag, you won't be able to access the URL of the function directly from your browser. You will likely see a 401 Unauthorized Error page. That is because now the cloud function requires the right authentications headers in the request before it can serve the request.
+- Use a browser extension (such as header editor in Chrome) to supply the required auth header for the function url.
 `Authorization: Bearer [$gcloud auth print-identity-token]`.
+
+## Data Type & Operation Support
+
+| Data Type | Operations |
+|-----------|------------|
+| `string`  |Read (`GET`), Write (`SET`), Delete (`DEL`)|
+| `set`  | Read (`SMEMBER`), Write (`SADD`), Delete (`DEL`) |
+| `list` | *Availability by end of Q2 2024* |
+| `hash` | *Availability by end of Q2 2024* |
+| `Geospatial Indices` | *Availability by end of Q2 2022* |
