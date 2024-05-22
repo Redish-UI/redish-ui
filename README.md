@@ -5,9 +5,18 @@
 - Deployable as a serverless function (AWS Lambda / Google Cloud Functions / Edge Function).
 - Single code base.
 
+## Features
+
+- **Connection management:** Save your connections locally on your browser.
+- **Data export:** Export your data to CSV and JSON.
+- **Adaptive theming:** Application theme adapts to your system color theme (light / dark).
+- **Minimal:** Build for simplicity and ease of use.
+- **Free and open source:** Completely free & Ad free.
+
 ## Table of Contents
 
 - [Redish-ui](#redish-ui)
+  - [Features](#features)
   - [Table of Contents](#table-of-contents)
   - [Local Setup](#local-setup)
   - [Run The Application](#run-the-application)
