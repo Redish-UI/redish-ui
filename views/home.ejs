@@ -443,6 +443,10 @@
 
         const initConnectionApp = (data) => {
             data.checkingConnections = true;
+            
+            data.duplicateConnection = false;
+            data.connected = null;
+
             let connections = localStorage.getItem('connections');
             if(connections) {
                 connections = JSON.parse(connections);
