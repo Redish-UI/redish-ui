@@ -147,8 +147,14 @@
             font-family: monospace;
         }
 
+        .font-large {
+            font-size: large;
+        }
         .font-medium {
             font-size: medium;
+        }
+        .font-small {
+            font-size: small !important;
         }
 
 
@@ -746,7 +752,7 @@
                                 <small aria-busy="true">Verifying all the connections ...</small>
                             </template>
                             <template x-if="!checkingConnections">
-                                <small>All the connections are verified <i class="fa-solid fa-circle-check color-success"></i></small>
+                                <small>All the connections are verified &nbsp;<i class="fa-solid fa-circle-check color-success font-small"></i></small>
                             </template>
                         </div>
                     </main>
