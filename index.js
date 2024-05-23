@@ -32,6 +32,10 @@ const getRedisClient = async (payloadRedisOptions) => {
     }
   }
 
+  if(payloadRedisOptions.tls) {
+    redisOptions.socket.rejectUnauthorized = false;
+  }
+
   if(payloadRedisOptions.username && payloadRedisOptions.password) {
     redisOptions.username = payloadRedisOptions.username;
     redisOptions.password = payloadRedisOptions.password;
