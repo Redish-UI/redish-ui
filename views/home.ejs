@@ -270,7 +270,6 @@
         }
 
         const init = (data) => {
-            console.log("init ....");
             const origin = window.location.origin;
             const pathname = window.location.pathname;
             
@@ -292,11 +291,10 @@
                 data.baseUrl += "/";
             }
 
-            console.log(`origin=${origin}, pathname=${pathname}, data.env=${data.env}, data.baseUrl=${data.baseUrl}`);
+            // console.log(`origin=${origin}, pathname=${pathname}, data.env=${data.env}, data.baseUrl=${data.baseUrl}`);
         }
 
         const keySearchHandler = (data) => {
-            console.log('IN keySearchHandler() ...');
             if(!data.formData.searchTerm || data.formData.searchTerm.trim().length == 0) return
             data.formState.isLoading = true;
             const startTime = performance.now();
@@ -335,12 +333,11 @@
                 data.formState.isLoading = false;
                 const endTime = performance.now();
                 data.operation.timeTaken = endTime - startTime;
-                console.log(`Operation time: ${data.operation.timeTaken} milliseconds`);
+                // console.log(`Operation time: ${data.operation.timeTaken} milliseconds`);
             });
         }
 
         const submitHandler = (data) => {
-            console.log('IN submitHandler() ...');
             data.formData.searchTerm = '';
             data.formState.isLoading = true;
             const startTime = performance.now();
@@ -514,7 +511,6 @@
         }
 
         const connectionSaveHandler = data => {
-            console.log('connectionSaveHandler() ...', 'data=', JSON.stringify(data));
             data.savingConnection = true;
 
             // Validate alias name, make sure non-duplicate
@@ -616,7 +612,19 @@
 
         const selectConnection = (conIndex, data) => {
             data.formData.redis = data.connections[conIndex];
-            // data.conIndex = conIndex;
+
+            data.formData.response = {};
+            data.formData.action.dataType ='string';
+            data.formData.action.key ='';
+            data.formData.action.value ='';
+            data.formData.action.ttl =0;
+            data.formData.action.action ='write';
+
+            data.response = {};
+            data.filteredResponse = {}; 
+            data.csvString = ''; 
+            data.operation = { timeTaken:  0 };
+
             data.mode = "list";
             data.page = "main";
         }
@@ -999,7 +1007,7 @@
                                              <template x-if="formData.action.action == 'write' || formData.action.action == 'copy'">
                                                 <label for="ttl">
                                                     TTL <span class="color-red">*</span>
-                                                    <input type="number" min="0" id="ttl" name="ttl" x-model="formData.action.ttl" required></textarea>
+                                                    <input type="number" min="0" id="ttl" name="ttl" x-model="formData.action.ttl" required>
                                                     <small>TTL in minutes. Default = 0 i.e. no expiry</small>
                                                 </label>
                                             </template>
