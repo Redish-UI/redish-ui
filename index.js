@@ -139,7 +139,7 @@ app.post('/api/v1/process', async (req, res) => {
         if(type === 'string') {
           const value = await client.get(key);
           console.log(`value: ${value}`);
-          values.push({type, key, value});
+          values.push({type, key, value: JSON.parse(value)});
         } else if(type === 'set') {
           const value = await client.sMembers(key);
           values.push({type, key, value});
