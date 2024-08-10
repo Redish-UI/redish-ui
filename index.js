@@ -1,3 +1,9 @@
+/*
+Version: 1.0.0
+Last Modified: 10-08-2024
+Author: soumitri.pattnaik@gmail.com
+*/
+
 const express = require('express');
 const path = require('path');
 const { createClient } = require('redis');
@@ -50,7 +56,6 @@ const getRedisClient = async (payloadRedisOptions) => {
   return client;
 
 }
-
 
 const app = express();
 app.use(express.json())
@@ -129,22 +134,21 @@ app.post('/api/v1/process', async (req, res) => {
       const values = [];
       
       for(const key of keys) {
-        console.log('key:', key);
+        // console.log('key:', key);
 
         const type = await client.type(key);
-        console.log(`type: ${type}`);
-        const exists = await client.exists(key);
-        console.log("exists", exists);
+        console.log(`${keys.length} keys found.`);
+        // console.log(`type: ${type}`);
         
         if(type === 'string') {
           const value = await client.get(key);
-          console.log(`value: ${value}`);
+          // console.log(`value: ${value}`);
           
           try {
             const parsed = JSON.parse(value);
             values.push({type, key, value: parsed});
           } catch (e) {
-            console.log(`error: ${e}`);
+            // console.debug(`Unable to parse string value to JSON | error: ${e} | key: ${key} | value: ${value}`);
             values.push({type, key, value});
           }
 
