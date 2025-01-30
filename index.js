@@ -156,6 +156,9 @@ app.post('/api/v1/process', async (req, res) => {
         } else if (type === 'set') {
           const value = await client.sMembers(key);
           values.push({ type, key, value });
+        } else if (type === 'hash') {
+          const value = await client.hGetAll(key);
+          values.push({ type, key, value });
         }
       }
 
