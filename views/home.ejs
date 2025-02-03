@@ -394,8 +394,6 @@
             try {
                 let csvRows = [];
 
-                console.log(data.response.data);    
-
                 if(data.response?.data) {
                     if(Array.isArray(data.response.data)) {
                         const headers = Object.keys(data.response.data[0]);
@@ -403,7 +401,7 @@
                         
                         data.response.data.forEach(row => {
                             let values = Object.values(row);
-                            values = values.map(value => `"${ typeof value === 'object' ? JSON.stringify(value) : value }"`).join(',');
+                            values = values.map(value => `"${ typeof value === 'object' ? JSON.stringify(value).replace(/"/g, '""') : value }"`).join(',');
                             csvRows.push(values);
                         });
                     } else {
@@ -413,7 +411,6 @@
                         const headers = Object.keys(data.response.data);
                         csvRows.push(headers.join(','));
                         
-                        console.log("---", Object.values(data.response.data));
                         const values = Object.values(data.response.data).map(v => typeof v === 'object' ? JSON.stringify(v) : v).join(',');
                         csvRows.push(values);
                     }
