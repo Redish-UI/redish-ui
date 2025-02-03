@@ -220,7 +220,8 @@
         const getPageData = () => {
             const pageData = { 
                 page: 'connection', 
-                token: '<%= token %>', 
+                token: '<%= token %>',
+                editMode: '<%= editMode %>',
                 env: '', 
                 baseUrl: '', 
                 formData: {
@@ -922,117 +923,117 @@
                                     <textarea id="token" name="token" x-model="token" required></textarea>
                                     <small>Type <code>gcloud auth print-identity-token</code> in your terminal</small>
                                 </label> -->
-    
                                 <div id="search" role="group">
                                     <input type="text" placeholder="Key (regex) *" x-model="$data.formData.searchTerm" required />
                                     <button @click.prevent="keySearchHandler($data)" @keyup.enter="keySearchHandler($data)" :disabled="!formData.searchTerm" :aria-busy="formState.isLoading">Search</button>
                                 </div>
 
-                                <details>
-                                    <summary>Something Else</summary>
-                                    
-                                    <div class="grid">
-                                        <label for="data-type">
-                                            Data Type <span class="color-red">*</span>
-                                            <select id="data-type" name="data-type" x-model="formData.action.dataType" required>
-                                                <option>string</option>
-                                                <option>set</option>
-                                            </select>
-                                        </label>
-        
-                                        <label for="action">
-                                            Action <span class="color-red">*</span>
-                                            <select name="action" aria-label="Action" x-model="formData.action.action" required>
-                                                <option selected disabled value="">Action</option>
-                                                <!-- <option value="read">Read</option> -->
-                                                <option value="write">Write</option>
-                                                <!-- <option value="copy">Copy</option> -->
-                                                <template x-if="formData.action.dataType == 'string'">
-                                                    <option value="delete">Delete</option>
-                                                </template>
-                                                <template x-if="formData.action.dataType == 'set'">
-                                                    <option value="delete-value">Delete Value</option>
-                                                </template>
-                                                <template x-if="formData.action.dataType == 'set'">
-                                                    <option value="delete-key">Delete Key</option>
-                                                </template>
-                                            </select>
-                                        </label>
-                                    </div>
+                                <template x-if="editMode === 'true' || editMode === 'TRUE'">
+                                  <details>
+                                      <summary>Something Else</summary>
+                                      
+                                      <div class="grid">
+                                          <label for="data-type">
+                                              Data Type <span class="color-red">*</span>
+                                              <select id="data-type" name="data-type" x-model="formData.action.dataType" required>
+                                                  <option>string</option>
+                                                  <option>set</option>
+                                              </select>
+                                          </label>
+          
+                                          <label for="action">
+                                              Action <span class="color-red">*</span>
+                                              <select name="action" aria-label="Action" x-model="formData.action.action" required>
+                                                  <option selected disabled value="">Action</option>
+                                                  <!-- <option value="read">Read</option> -->
+                                                  <option value="write">Write</option>
+                                                  <!-- <option value="copy">Copy</option> -->
+                                                  <template x-if="formData.action.dataType == 'string'">
+                                                      <option value="delete">Delete</option>
+                                                  </template>
+                                                  <template x-if="formData.action.dataType == 'set'">
+                                                      <option value="delete-value">Delete Value</option>
+                                                  </template>
+                                                  <template x-if="formData.action.dataType == 'set'">
+                                                      <option value="delete-key">Delete Key</option>
+                                                  </template>
+                                              </select>
+                                          </label>
+                                      </div>
 
-                                    <div>
-                                        <hr/>
-                                        
-                                        <!-- SOURCE HOST & PORT -->
-                                        <template x-if="formData.action.action == 'copy'">
-                                            <div>
-                                                <fieldset class="grid" style="margin-bottom: 0; display: flex; align-items: center;">
-                                                    <label for="sourceRedisHost">
-                                                        Source Redis Host <span class="color-red">*</span>
-                                                        <input type="text" id="sourceRedisHost" name="sourceRedisHost" x-model="formData.sourceRedis.host" required>
-                                                    </label>
-                
-                                                    <label for="sourceRedisPort">
-                                                        Source Redis port <span class="color-red">*</span>
-                                                        <input type="number" min="1" max="9999" id="sourceRedisPort" name="sourceRedisPort" x-model="formData.sourceRedis.port" required>
-                                                    </label>
-        
-                                                    <label style="flex: none;">
-                                                        <input type="checkbox" role="switch" x-model="formData.sourceRedis.tls">
-                                                        TLS
-                                                    </label>
-                                                </fieldset>
-        
-                                                <details>
-                                                    <summary>Show More</summary>
-                                                    <div class="grid">
-                                                        <label for="sourceRedisUsername">
-                                                            Source Redis Username
-                                                            <input type="text" id="sourceRedisUsername" name="sourceRedisUsername" x-model="formData.sourceRedis.username" :aria-invalid="formState.redisError != ''">
-                                                        </label>
-                        
-                                                        <label for="sourceRedisPassword">
-                                                            Source Redis Password
-                                                            <input type="password" id="sourceRedisPassword" name="sourceRedisPassword" x-model="formData.sourceRedis.password" :aria-invalid="formState.redisError != ''">
-                                                        </label>
-                                                    </div>
-                                                </details>
-                                                <hr/>
-                                            </div>
-                                        </template>
-        
-                                        <div class="grid">
-                                            <!-- KEY -->
-                                            <template x-if="formData.action.action == 'read' || formData.action.action == 'write' || formData.action.action == 'copy' || formData.action.action == 'delete' || formData.action.action == 'delete-key' || formData.action.action == 'delete-value'">
-                                                <label for="key">
-                                                    Key<span x-text="formData.action.dataType == 'string' && formData.action.action != 'write' ? ' (regex)' : ''"></span> <span class="color-red">*</span>
-                                                    <input type="text" id="key" name="key" x-model="formData.action.key" required>
-                                                </label>
-                                            </template>
-    
-                                             <!-- TTL -->
-                                             <template x-if="formData.action.action == 'write' || formData.action.action == 'copy'">
-                                                <label for="ttl">
-                                                    TTL <span class="color-red">*</span>
-                                                    <input type="number" min="0" id="ttl" name="ttl" x-model="formData.action.ttl" required>
-                                                    <small>TTL in minutes. Default = 0 i.e. no expiry</small>
-                                                </label>
-                                            </template>
-                                        </div>
-            
-                                        <!-- VALUE -->
-                                        <template x-if="formData.action.action == 'write' || formData.action.action == 'delete-value'">
-                                            <label for="value">
-                                                Value <span class="color-red">*</span>
-                                                <textarea id="value" name="value" x-model="formData.action.value" required></textarea>
-                                            </label>
-                                        </template>
-                                        
-                                    </div>
+                                      <div>
+                                          <hr/>
+                                          
+                                          <!-- SOURCE HOST & PORT -->
+                                          <template x-if="formData.action.action == 'copy'">
+                                              <div>
+                                                  <fieldset class="grid" style="margin-bottom: 0; display: flex; align-items: center;">
+                                                      <label for="sourceRedisHost">
+                                                          Source Redis Host <span class="color-red">*</span>
+                                                          <input type="text" id="sourceRedisHost" name="sourceRedisHost" x-model="formData.sourceRedis.host" required>
+                                                      </label>
+                  
+                                                      <label for="sourceRedisPort">
+                                                          Source Redis port <span class="color-red">*</span>
+                                                          <input type="number" min="1" max="9999" id="sourceRedisPort" name="sourceRedisPort" x-model="formData.sourceRedis.port" required>
+                                                      </label>
+          
+                                                      <label style="flex: none;">
+                                                          <input type="checkbox" role="switch" x-model="formData.sourceRedis.tls">
+                                                          TLS
+                                                      </label>
+                                                  </fieldset>
+          
+                                                  <details>
+                                                      <summary>Show More</summary>
+                                                      <div class="grid">
+                                                          <label for="sourceRedisUsername">
+                                                              Source Redis Username
+                                                              <input type="text" id="sourceRedisUsername" name="sourceRedisUsername" x-model="formData.sourceRedis.username" :aria-invalid="formState.redisError != ''">
+                                                          </label>
+                          
+                                                          <label for="sourceRedisPassword">
+                                                              Source Redis Password
+                                                              <input type="password" id="sourceRedisPassword" name="sourceRedisPassword" x-model="formData.sourceRedis.password" :aria-invalid="formState.redisError != ''">
+                                                          </label>
+                                                      </div>
+                                                  </details>
+                                                  <hr/>
+                                              </div>
+                                          </template>
+          
+                                          <div class="grid">
+                                              <!-- KEY -->
+                                              <template x-if="formData.action.action == 'read' || formData.action.action == 'write' || formData.action.action == 'copy' || formData.action.action == 'delete' || formData.action.action == 'delete-key' || formData.action.action == 'delete-value'">
+                                                  <label for="key">
+                                                      Key<span x-text="formData.action.dataType == 'string' && formData.action.action != 'write' ? ' (regex)' : ''"></span> <span class="color-red">*</span>
+                                                      <input type="text" id="key" name="key" x-model="formData.action.key" required>
+                                                  </label>
+                                              </template>
+      
+                                              <!-- TTL -->
+                                              <template x-if="formData.action.action == 'write' || formData.action.action == 'copy'">
+                                                  <label for="ttl">
+                                                      TTL <span class="color-red">*</span>
+                                                      <input type="number" min="0" id="ttl" name="ttl" x-model="formData.action.ttl" required>
+                                                      <small>TTL in minutes. Default = 0 i.e. no expiry</small>
+                                                  </label>
+                                              </template>
+                                          </div>
+              
+                                          <!-- VALUE -->
+                                          <template x-if="formData.action.action == 'write' || formData.action.action == 'delete-value'">
+                                              <label for="value">
+                                                  Value <span class="color-red">*</span>
+                                                  <textarea id="value" name="value" x-model="formData.action.value" required></textarea>
+                                              </label>
+                                          </template>
+                                          
+                                      </div>
 
-                                    <button type="submit" :aria-busy="formState.isLoading ? 'true' : 'false'">Submit</button>
-                                </details>
-
+                                      <button type="submit" :aria-busy="formState.isLoading ? 'true' : 'false'">Submit</button>
+                                  </details>
+                                </template>
                             </main>
                             
                             <!-- <footer>

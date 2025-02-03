@@ -71,7 +71,7 @@ app.get('/', (req, res) => {
   console.log('auth-header', authHeader);
 
   // Render home using EJS template engine
-  res.render('home', { token: authHeader });
+  res.render('home', { token: authHeader, editMode: process.env.EDIT_MODE });
 });
 
 
