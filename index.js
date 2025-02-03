@@ -1,6 +1,6 @@
 /*
-Version: 1.0.0
-Last Modified: 10-08-2024
+Version: 1.1.0
+Last Modified: 3rd Feb 2025
 Author: soumitri.pattnaik@gmail.com
 */
 
