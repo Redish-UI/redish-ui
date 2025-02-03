@@ -426,7 +426,7 @@
             const a = document.createElement('a');
             a.style.display = 'none';
             a.href = csvURL;
-            a.download = 'output.csv';
+            a.download = `${getDownloadFileName(data)}.csv`;
             a.click();
         }
 
@@ -436,8 +436,14 @@
             const a = document.createElement('a');
             a.style.display = 'none';
             a.href = csvURL;
-            a.download = 'output.json';
+            a.download = `${getDownloadFileName(data)}.json`;
             a.click();
+        }
+
+        const getDownloadFileName = (data) => {
+          const connectionAlias = data.formData.redis.alias;
+          const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+          return `${connectionAlias}_${timestamp}`;
         }
 
         const searchHandler = (data) => {
